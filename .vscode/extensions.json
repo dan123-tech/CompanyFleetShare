@@ -1,3 +1,6 @@
 {
-  "recommendations": ["databricks.neon-local-connect"]
+  "recommendations": [
+    "databricks.neon-local-connect",
+    "Vercel.vscode-vercel"
+  ]
 }
