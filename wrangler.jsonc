@@ -2,7 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	// Must match Cloudflare dashboard Worker name and services[0].service below (OpenNext self-binding).
-	"name": "licenta",
+	"name": "licentadaniweb",
 	"compatibility_date": "2026-04-03",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	"observability": {
