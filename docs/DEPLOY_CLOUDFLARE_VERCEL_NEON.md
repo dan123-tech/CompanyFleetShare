@@ -45,7 +45,7 @@ The repo includes **`@opennextjs/cloudflare`** and scripts `build:cf`, `deploy`,
 
 - Set Neon secrets in **Wrangler** / Workers dashboard (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, etc.).
 - Builds may use `WORKERS_CI=1` so `npm run build` runs OpenNext (see `scripts/run-build.js`).
-- Prisma on Workers often needs the **Neon serverless driver** / adapter; validate against [Prisma + Neon serverless docs](https://neon.tech/docs/guides/prisma) before relying on production traffic.
+- Prisma on Workers **must** use Neon’s serverless driver: `src/lib/db.js` switches to `@prisma/adapter-neon` when `DATABASE_URL` contains `neon.tech` (or set `PRISMA_NEON_ADAPTER=1`). Local Docker/Postgres URLs keep the default Prisma engine.
 
 Use **either** Vercel **or** OpenNext on Cloudflare for this monolith—not both—unless you maintain two deployment pipelines for the same code intentionally.
 
