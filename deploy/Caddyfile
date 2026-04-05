@@ -1,4 +1,4 @@
-# HTTPS reverse proxy → Next.js `app` service (port 3000 inside the compose network).
+# HTTPS reverse proxy → Next.js `app` service (port 3100 inside the compose network when using `npm run start`).
 #
 # Host maps 8443 → container 443. Open:
 #   https://localhost:8443
@@ -17,5 +17,5 @@
 # Container listens on 443; host publishes it as :8443 (avoids reserved Windows :80).
 :443 {
 	tls /certs/cert.pem /certs/key.pem
-	reverse_proxy app:3000
+	reverse_proxy app:3100
 }

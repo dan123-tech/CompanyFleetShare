@@ -9,7 +9,7 @@
 # Live code sync (host edits apply without rebuilding the app image):
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 #   or: npm run docker:dev
-# App:  http://localhost:3000  |  https://localhost:8443 (see deploy/Caddyfile if you use 443)
+# App:  http://localhost:3100 (proxy :3101)  |  https://localhost:8443 (see deploy/Caddyfile if you use 443)
 # DB:   postgresql://postgres:postgres@localhost:5432/company_car_sharing
 # Postgres stays on 16 here so existing named volumes (postgres_data) keep working.
 # To move to PG 17+, dump/restore or follow https://hub.docker.com/_/postgres upgrade notes.
@@ -38,8 +38,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-    # Default image CMD is Next only (for cloud). Compose keeps Next + proxy for LAN phones on :3001.
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3100}
+    # Default image CMD is Next only (for cloud). Compose keeps Next + proxy for LAN phones on host :3101.
     command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
     container_name: company-car-sharing-app
     restart: unless-stopped
@@ -53,19 +53,20 @@ services:
     # Set AUTH_SECRET (and optionally NEXTAUTH_URL) in a root `.env` file for compose substitution.
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/company_car_sharing?schema=public"
+      DIRECT_URL: "postgresql://postgres:postgres@db:5432/company_car_sharing?schema=public"
       AUTH_SECRET: "${AUTH_SECRET}"
-      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
-      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3100}"
+      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3100}"
       AI_VERIFICATION_URL: "http://host.docker.internal:8080"
       AI_VERIFY_PATH: "/validate"
       HELPBOT_URL: "http://host.docker.internal:8501"
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "3100:3100"
+      - "3101:3101"
     volumes:
       - uploads_data:/app/public/uploads
 
-  # Terminates TLS; forwards to Next.js on app:3000 (same content as direct :3000).
+  # Terminates TLS; forwards to Next.js on app:3100 (same content as direct :3100 on the host).
   caddy:
     image: caddy:2.9-alpine
     container_name: company-car-sharing-caddy

@@ -3,11 +3,12 @@
  * Returns company with joinCode so others can join.
  */
 
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createCompany } from "@/lib/companies";
 import { extendUserSession } from "@/lib/auth";
 import { normalizeClientType } from "@/lib/auth/session-tokens";
-import { requireSession, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireSession, errorResponse } from "@/lib/api-helpers";
 
 const bodySchema = z.object({
   name: z.string().min(1).max(200),
@@ -22,15 +23,6 @@ export async function POST(request) {
 
   const company = await createCompany(out.session.userId, parsed.data);
 
-  const sid = await extendUserSession(
-    out.session,
-    {
-      companyId: company.id,
-      role: "ADMIN",
-    },
-    request
-  );
-
   const payload = {
     company: {
       id: company.id,
@@ -40,6 +32,18 @@ export async function POST(request) {
     },
     message: "Share the join code so others can join your company.",
   };
-  if (normalizeClientType(out.session.client) === "web") payload.webSessionId = sid;
-  return jsonResponse(payload, 201);
+  const res = NextResponse.json(payload, { status: 201 });
+  const sid = await extendUserSession(
+    out.session,
+    {
+      companyId: company.id,
+      role: "ADMIN",
+    },
+    request,
+    res
+  );
+  if (normalizeClientType(out.session.client) === "web") {
+    return NextResponse.json({ ...payload, webSessionId: sid }, { status: 201, headers: res.headers });
+  }
+  return res;
 }

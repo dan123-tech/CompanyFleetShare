@@ -3,11 +3,12 @@
  * Body: { joinCode }
  */
 
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { joinCompanyByCode } from "@/lib/companies";
 import { extendUserSession } from "@/lib/auth";
 import { normalizeClientType } from "@/lib/auth/session-tokens";
-import { requireSession, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireSession, errorResponse } from "@/lib/api-helpers";
 
 const bodySchema = z.object({
   joinCode: z.string().min(1).max(20),
@@ -24,15 +25,6 @@ export async function POST(request) {
     return errorResponse("Invalid join code or you are already a member", 400);
   }
 
-  const sid = await extendUserSession(
-    out.session,
-    {
-      companyId: member.companyId,
-      role: member.role,
-    },
-    request
-  );
-
   const payload = {
     company: {
       id: member.company.id,
@@ -43,6 +35,18 @@ export async function POST(request) {
     role: member.role,
     message: "You have joined the company.",
   };
-  if (normalizeClientType(out.session.client) === "web") payload.webSessionId = sid;
-  return jsonResponse(payload);
+  const res = NextResponse.json(payload);
+  const sid = await extendUserSession(
+    out.session,
+    {
+      companyId: member.companyId,
+      role: member.role,
+    },
+    request,
+    res
+  );
+  if (normalizeClientType(out.session.client) === "web") {
+    return NextResponse.json({ ...payload, webSessionId: sid }, { headers: res.headers });
+  }
+  return res;
 }

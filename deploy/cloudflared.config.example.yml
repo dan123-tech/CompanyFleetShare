@@ -5,14 +5,14 @@
 # Replace: tunnel name, credentials-file path (from `cloudflared tunnel create`),
 # and hostnames to match your Cloudflare DNS + domain.
 #
-# Point `service` at where Next listens (Docker Compose exposes :3000 on the host).
+# Point `service` at where Next listens (this repo uses :3100 on the host for dev / compose).
 
 tunnel: fleetshare-tunnel
 credentials-file: C:\Users\YOUR_USERNAME\.cloudflared\YOUR_TUNNEL_ID.json
 
 ingress:
   - hostname: companyfleetshare.com
-    service: http://localhost:3000
+    service: http://localhost:3100
   - hostname: www.companyfleetshare.com
-    service: http://localhost:3000
+    service: http://localhost:3100
   - service: http_status:404

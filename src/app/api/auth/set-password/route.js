@@ -4,11 +4,13 @@
  * For invite flow: set password and enroll (token = invite token).
  */
 
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getInviteByToken, acceptInvite, findUserByEmail } from "@/lib/users";
-import { hashPassword, createUserSession } from "@/lib/auth";
+import { hashPassword, writeSessionCookie } from "@/lib/auth";
+import { normalizeClientType, rotateUserSessionToken } from "@/lib/auth/session-tokens";
 import { prisma } from "@/lib/db";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { errorResponse } from "@/lib/api-helpers";
 
 const bodySchema = z.object({
   token: z.string().min(1),
@@ -51,21 +53,26 @@ export async function POST(request) {
   const member = await acceptInvite(token, user.id);
   if (!member) return errorResponse("Could not enroll", 400);
 
-  const webSessionId = await createUserSession(
+  const client = normalizeClientType("web");
+  const sid = await rotateUserSessionToken(user.id, client);
+  const body = {
+    user: { id: user.id, email: user.email, name: user.name, role: member.role, companyId: member.companyId },
+    company: { id: member.company.id, name: member.company.name },
+    webSessionId: sid,
+  };
+  const res = NextResponse.json(body);
+  await writeSessionCookie(
     {
       userId: user.id,
       email: user.email,
       name: user.name,
       companyId: member.companyId,
       role: member.role,
+      client,
+      sid,
     },
-    "web",
-    request
+    request,
+    res
   );
-
-  return jsonResponse({
-    user: { id: user.id, email: user.email, name: user.name, role: member.role, companyId: member.companyId },
-    company: { id: member.company.id, name: member.company.name },
-    webSessionId,
-  });
+  return res;
 }

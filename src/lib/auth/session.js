@@ -7,6 +7,7 @@
  */
 
 import { cookies, headers } from "next/headers";
+import { NextResponse } from "next/server";
 import {
   clearUserSessionToken,
   normalizeClientType,
@@ -25,18 +26,25 @@ function isProduction() {
 
 /**
  * Whether the incoming request is served over HTTPS (or forwarded as such).
+ * Vercel/serverless often use an internal http:// URL while the client used HTTPS; without a correct
+ * forwarded proto, we'd set non-Secure cookies and browsers reject them on HTTPS pages (login looks OK but session is lost).
  * @param {Request} [request]
  */
 export function isRequestHttps(request) {
   if (!request) return false;
-  const forwarded = request.headers.get("x-forwarded-proto");
-  if (forwarded === "https") return true;
-  if (forwarded === "http") return false;
-  try {
-    return new URL(request.url).protocol === "https:";
-  } catch {
-    return false;
+  const raw = request.headers.get("x-forwarded-proto");
+  if (raw) {
+    const proto = raw.split(",")[0].trim().toLowerCase();
+    if (proto === "https") return true;
+    if (proto === "http") return false;
   }
+  try {
+    if (new URL(request.url).protocol === "https:") return true;
+  } catch {
+    /* ignore */
+  }
+  if (process.env.VERCEL === "1" && process.env.NODE_ENV === "production") return true;
+  return false;
 }
 
 function resolveCookieBinding(request) {
@@ -94,27 +102,37 @@ async function readRawSessionPayload() {
   return null;
 }
 
-async function writeCookieValue(payloadObj, request) {
+/**
+ * @param {import("next/server").NextResponse} [nextResponse] If set, attach Set-Cookie on this response (avoids Next.js
+ * throwing on Vercel when `cookies().set` + Secure is combined with an internal http:// request URL).
+ */
+async function writeCookieValue(payloadObj, request, nextResponse) {
   const payloadStr = JSON.stringify(payloadObj);
   const signature = sign(payloadStr);
   const value = Buffer.from(JSON.stringify({ p: payloadStr, s: signature })).toString("base64");
-  const cookieStore = await cookies();
   const { name, secure, sameSite } = resolveCookieBinding(request);
-  cookieStore.set(name, value, {
+  const opts = {
     httpOnly: true,
     secure,
     sameSite,
     maxAge: MAX_AGE,
     path: "/",
-  });
+  };
+  if (nextResponse instanceof NextResponse) {
+    nextResponse.cookies.set(name, value, opts);
+    return;
+  }
+  const cookieStore = await cookies();
+  cookieStore.set(name, value, opts);
 }
 
 /**
  * Full cookie write. Requires userId, email, name, companyId, role, client, sid.
  * @param {Object} p
  * @param {Request} [request]
+ * @param {import("next/server").NextResponse} [nextResponse] Prefer this in Route Handlers on Vercel (see writeCookieValue).
  */
-export async function writeSessionCookie(p, request) {
+export async function writeSessionCookie(p, request, nextResponse) {
   const client = normalizeClientType(p.client);
   const payload = {
     userId: p.userId,
@@ -128,7 +146,7 @@ export async function writeSessionCookie(p, request) {
   if (!payload.userId || !payload.email || !payload.sid) {
     throw new Error("writeSessionCookie: missing userId, email, or sid");
   }
-  await writeCookieValue(payload, request);
+  await writeCookieValue(payload, request, nextResponse);
 }
 
 /**
@@ -136,11 +154,12 @@ export async function writeSessionCookie(p, request) {
  * @param {{ userId: string, email: string, name: string, companyId: string|null, role: string|null }} data
  * @param {"web"|"mobile"} clientType
  * @param {Request} [request]
+ * @param {import("next/server").NextResponse} [nextResponse]
  */
-export async function createUserSession(data, clientType, request) {
+export async function createUserSession(data, clientType, request, nextResponse) {
   const client = normalizeClientType(clientType);
   const sid = await rotateUserSessionToken(data.userId, client);
-  await writeSessionCookie({ ...data, client, sid }, request);
+  await writeSessionCookie({ ...data, client, sid }, request, nextResponse);
   return sid;
 }
 
@@ -150,8 +169,9 @@ export async function createUserSession(data, clientType, request) {
  * @param {Object} current - from getSession()
  * @param {Object} updates - partial { companyId, role, email, name }
  * @param {Request} [request]
+ * @param {import("next/server").NextResponse} [nextResponse]
  */
-export async function extendUserSession(current, updates, request) {
+export async function extendUserSession(current, updates, request, nextResponse) {
   const client = normalizeClientType(current.client ?? "web");
   let sid = current.sid;
   if (!sid) {
@@ -167,7 +187,8 @@ export async function extendUserSession(current, updates, request) {
       client,
       sid,
     },
-    request
+    request,
+    nextResponse
   );
   return sid;
 }
@@ -177,7 +198,7 @@ export async function extendUserSession(current, updates, request) {
  */
 export async function setSession(payload, request) {
   if (payload.sid && payload.client) {
-    await writeSessionCookie(payload, request);
+    await writeSessionCookie(payload, request, undefined);
     return;
   }
   await createUserSession(

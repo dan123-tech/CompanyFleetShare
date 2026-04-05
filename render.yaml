@@ -23,6 +23,11 @@ services:
         fromDatabase:
           name: fleetshare-postgres
           property: connectionString
+      # Prisma: migrations use DIRECT_URL (same string as DATABASE_URL for Render Postgres)
+      - key: DIRECT_URL
+        fromDatabase:
+          name: fleetshare-postgres
+          property: connectionString
       - key: AUTH_SECRET
         sync: false # set in Render dashboard: 32+ chars (openssl rand -base64 32)
       - key: NEXT_PUBLIC_APP_URL

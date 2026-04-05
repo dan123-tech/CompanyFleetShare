@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3100";
   const spec = {
     openapi: "3.0.0",
     info: {

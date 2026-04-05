@@ -1,11 +1,12 @@
 /**
  * Lightweight HTTP + WebSocket proxy.
- * Listens on 0.0.0.0:3001 (override with env PROXY_PORT, e.g. 3010) and forwards to localhost:3000.
+ * Listens on 0.0.0.0:3101 by default (override with env PROXY_PORT, e.g. 3010) and forwards to
+ * localhost:TARGET_PORT (default 3100) so another app can use 3000/3001.
  *
  * This allows the app to be reached at both:
- *   • http://localhost:3000        (direct)
- *   • http://<network-ip>:3001    (via this proxy, from phones / other devices)
- *   • http://localhost:3001        (also works locally)
+ *   • http://localhost:3100        (direct)
+ *   • http://<network-ip>:3101    (via this proxy, from phones / other devices)
+ *   • http://localhost:3101        (also works locally)
  *
  * Uses only Node.js built-in modules — no extra npm packages needed.
  * Handles WebSocket upgrades so Next.js HMR (hot reload) keeps working.
@@ -15,8 +16,8 @@ const http = require("http");
 const net = require("net");
 
 const TARGET_HOST = "127.0.0.1";
-const TARGET_PORT = 3000;
-const PROXY_PORT = Number(process.env.PROXY_PORT) || 3001;
+const TARGET_PORT = Number(process.env.TARGET_PORT) || 3100;
+const PROXY_PORT = Number(process.env.PROXY_PORT) || 3101;
 
 /** Hop-by-hop headers: do not forward (RFC 9110). */
 const HOP_BY_HOP = new Set([
@@ -34,7 +35,7 @@ const HOP_BY_HOP = new Set([
 /**
  * Copy upstream headers to the client response. Set-Cookie must be appended per cookie;
  * passing the raw headers object to writeHead() can merge/join cookies incorrectly and
- * break login (session never sticks when using http://<LAN-IP>:3001).
+ * break login (session never sticks when using http://<LAN-IP>:3101).
  */
 function forwardResponseHeaders(upstreamRes, clientRes) {
   const h = upstreamRes.headers;

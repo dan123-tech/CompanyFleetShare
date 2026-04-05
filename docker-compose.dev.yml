@@ -25,8 +25,8 @@ services:
       - uploads_data:/app/public/uploads
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
-      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
+      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3100}"
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3100}"
       # File watching when using Docker Desktop on Windows/macOS
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"

@@ -60,6 +60,8 @@ yarn-error.log*
 
 # Project
 tmp_frontend
+tmp-neon-data.sql
+neon-import.sql
 
 # Android / Gradle (never commit generated or local build output)
 android/.gradle/

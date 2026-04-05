@@ -41,7 +41,7 @@ npm install -D prisma
 # Copy env example and edit with your values
 cp .env.example .env
 
-# Edit .env: set DATABASE_URL (PostgreSQL) and AUTH_SECRET
+# Edit .env: set DATABASE_URL, DIRECT_URL (same as DATABASE_URL for local), and AUTH_SECRET
 ```
 
 **Database with Docker (local)**
@@ -54,11 +54,14 @@ Then set in `.env`:
 
 ```
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/company_car_sharing?schema=public"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/company_car_sharing?schema=public"
 ```
 
 To stop the DB: `docker compose down`. Data is kept in a volume (`postgres_data`).
 
-**Or use an existing PostgreSQL:** create the database (e.g. `CREATE DATABASE company_car_sharing;`) and set `DATABASE_URL` accordingly.
+**Or use an existing PostgreSQL:** create the database (e.g. `CREATE DATABASE company_car_sharing;`) and set both URLs to the same connection string.
+
+**Neon:** use pooled `DATABASE_URL` and direct `DIRECT_URL` from the Neon dashboard (see `docs/DATABASE.md`).
 
 ---
 

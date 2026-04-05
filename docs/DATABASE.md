@@ -22,10 +22,11 @@ This starts PostgreSQL 16 with:
 - **User:** `postgres`
 - **Password:** `postgres`
 
-Then set in your `.env`:
+Then set in your `.env` (use the same URL for both):
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/company_car_sharing?schema=public"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/company_car_sharing?schema=public"
 ```
 
 ### Option B: Existing PostgreSQL server
@@ -39,13 +40,74 @@ CREATE DATABASE company_car_sharing
   LC_CTYPE 'en_US.UTF-8';
 ```
 
-2. Set `DATABASE_URL` in `.env`, for example:
+2. Set `DATABASE_URL` and `DIRECT_URL` in `.env` to the **same** connection string, for example:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/company_car_sharing?schema=public"
+DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/company_car_sharing?schema=public"
 ```
 
 Replace `USER`, `PASSWORD`, and `HOST` with your PostgreSQL credentials and host.
+
+### Option C: Neon (hosted PostgreSQL, good for Vercel / production)
+
+1. Create a project at [Neon](https://neon.tech) and a database (Neon often names it `neondb`; that is fine—Prisma migrations create the app schema).
+2. In the Neon console, open **Connect** and choose the **Prisma** snippet. You will see two connection strings:
+   - **Pooled** → use as `DATABASE_URL` (fewer connections from serverless / Next.js).
+   - **Direct** → use as `DIRECT_URL` (required for `prisma migrate deploy` / `prisma migrate dev`).
+3. In your root `.env` (and in Vercel **Environment Variables**), set both, for example:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@YOUR-POOLER-HOST/neondb?sslmode=require&schema=public"
+DIRECT_URL="postgresql://USER:PASSWORD@YOUR-DIRECT-HOST/neondb?sslmode=require&schema=public"
+```
+
+Replace the placeholders with the exact strings from Neon (password is auto-generated). If your URL already contains query parameters, append `&schema=public` instead of duplicating `?`.
+
+**Local development** with Docker Postgres: set `DATABASE_URL` and `DIRECT_URL` to the **same** local URL (see Option A).
+
+#### Importing an existing PostgreSQL database into Neon (then deploy on Vercel)
+
+You usually want **all objects in `public`** (tables, data, and the **`_prisma_migrations`** table) so Prisma on Vercel does not try to recreate tables that already exist.
+
+**1. Create a Neon project** (empty branch is fine). Copy the **direct** connection string (for `psql` / `pg_restore`).
+
+**2. Dump your current database** (example: local Docker DB `company_car_sharing`):
+
+```bash
+# Plain SQL (simple; good for small DBs). Omits ownership so it restores cleanly on Neon.
+pg_dump "postgresql://postgres:postgres@localhost:5432/company_car_sharing" \
+  --no-owner --no-acl --schema=public -f neon-import.sql
+```
+
+Or from inside the container (writes `neon-import.sql` in your current directory):
+
+```bash
+docker exec -t company-car-sharing-db pg_dump -U postgres -d company_car_sharing \
+  --no-owner --no-acl --schema=public > neon-import.sql
+```
+
+**3. Restore into Neon** (use the **direct** URL from Neon; add `?sslmode=require` if not already there):
+
+```bash
+psql "YOUR_NEON_DIRECT_CONNECTION_STRING" -f neon-import.sql
+```
+
+Custom format instead of SQL:
+
+```bash
+pg_dump "postgresql://postgres:postgres@localhost:5432/company_car_sharing" \
+  -Fc --no-owner --no-acl --schema=public -f dump.dump
+pg_restore --no-owner --no-acl -d "YOUR_NEON_DIRECT_CONNECTION_STRING" dump.dump
+```
+
+**4. Vercel environment variables** — set **`DATABASE_URL`** (pooled) and **`DIRECT_URL`** (direct) from Neon’s **Prisma** connection panel, plus **`AUTH_SECRET`**, **`NEXT_PUBLIC_APP_URL`**, **`NEXTAUTH_URL`**.
+
+**5. Deploy** — the build runs `prisma migrate deploy`. If `_prisma_migrations` in Neon matches this repo, pending migrations apply only if your dump was behind the latest migration; if the dump is already at the latest revision, deploy should report nothing to do.
+
+If you restored **only data** (no `_prisma_migrations`), use an **empty** Neon DB, run `npx prisma migrate deploy` locally against **`DIRECT_URL`**, then import **data-only** from the old DB (`pg_dump --data-only --schema=public`) so the schema matches exactly.
+
+Neon’s own guide: [Import data from Postgres](https://neon.tech/docs/import/import-from-postgres).
 
 ---
 

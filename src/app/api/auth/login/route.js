@@ -4,11 +4,13 @@
  * Sets session cookie and returns user + company (company null if user has not joined/created one yet).
  */
 
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { findUserByEmail } from "@/lib/users";
-import { verifyPassword, createUserSession } from "@/lib/auth";
+import { verifyPassword, writeSessionCookie } from "@/lib/auth";
+import { normalizeClientType, rotateUserSessionToken } from "@/lib/auth/session-tokens";
 import { getCompanyById } from "@/lib/companies";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { errorResponse } from "@/lib/api-helpers";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -55,44 +57,54 @@ export async function POST(request) {
         ? null
         : [...enrolled].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
 
+    const client = normalizeClientType(clientType);
+
     if (member) {
-      const sid = await createUserSession(
+      const sid = await rotateUserSessionToken(user.id, client);
+      const company = await getCompanyById(member.companyId);
+      const payload = {
+        user: { id: user.id, email: user.email, name: user.name, role: member.role, companyId: member.companyId },
+        company: company ? { id: company.id, name: company.name, domain: company.domain, joinCode: company.joinCode } : null,
+      };
+      if (client === "web") payload.webSessionId = sid;
+      const res = NextResponse.json(payload);
+      await writeSessionCookie(
         {
           userId: user.id,
           email: user.email,
           name: user.name,
           companyId: member.companyId,
           role: member.role,
+          client,
+          sid,
         },
-        clientType,
-        request
+        request,
+        res
       );
-      const company = await getCompanyById(member.companyId);
-      const payload = {
-        user: { id: user.id, email: user.email, name: user.name, role: member.role, companyId: member.companyId },
-        company: company ? { id: company.id, name: company.name, domain: company.domain, joinCode: company.joinCode } : null,
-      };
-      if (clientType === "web") payload.webSessionId = sid;
-      return jsonResponse(payload);
+      return res;
     }
 
-    const sid = await createUserSession(
+    const sid = await rotateUserSessionToken(user.id, client);
+    const payload = {
+      user: { id: user.id, email: user.email, name: user.name, role: null, companyId: null },
+      company: null,
+    };
+    if (client === "web") payload.webSessionId = sid;
+    const res = NextResponse.json(payload);
+    await writeSessionCookie(
       {
         userId: user.id,
         email: user.email,
         name: user.name,
         companyId: null,
         role: null,
+        client,
+        sid,
       },
-      clientType,
-      request
+      request,
+      res
     );
-    const payload = {
-      user: { id: user.id, email: user.email, name: user.name, role: null, companyId: null },
-      company: null,
-    };
-    if (clientType === "web") payload.webSessionId = sid;
-    return jsonResponse(payload);
+    return res;
   } catch (e) {
     console.error("[auth/login]", e);
     const msg = String(e?.message ?? e);

@@ -10,7 +10,7 @@ RUN npm ci --legacy-peer-deps
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Baked into the client bundle; override at build time: docker compose build --build-arg NEXT_PUBLIC_APP_URL=https://your-domain.com
-ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3100
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 RUN npm run build
 
@@ -27,6 +27,6 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/proxy-3001.js ./proxy-3001.js
 EXPOSE 3000
 # Cloud hosts (Render, Fly, etc.) set PORT; next start reads PORT when -p is omitted (see package.json start:docker).
-# Local docker-compose overrides CMD to use npm run start (Next + LAN proxy on 3000/3001).
+# docker-compose overrides CMD to `npm run start` (Next :3100 + proxy :3101 inside the container).
 ENV HOSTNAME="0.0.0.0"
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:docker"]
