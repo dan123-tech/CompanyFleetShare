@@ -220,7 +220,7 @@ public class MyReservationsFragment extends Fragment implements ReservationsAdap
 
     private void loadReservations() {
         RetrofitClient.getApiService(new AuthRepository(requireContext()).getSessionPreferences())
-                .getReservations(null).enqueue(new Callback<List<Reservation>>() {
+                .getReservations(null, "1").enqueue(new Callback<List<Reservation>>() {
             @Override
             public void onResponse(Call<List<Reservation>> call, Response<List<Reservation>> response) {
                 if (response.isSuccessful() && response.body() != null) {

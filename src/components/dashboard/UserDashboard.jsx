@@ -113,7 +113,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
     try {
       const [carsRes, resRes, histRes] = await Promise.all([
         apiCars(),
-        apiReservations(),
+        apiReservations({ mine: true }),
         apiReservationHistory(),
       ]);
       setCars(Array.isArray(carsRes) ? carsRes : []);

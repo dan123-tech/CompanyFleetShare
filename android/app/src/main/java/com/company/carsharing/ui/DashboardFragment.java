@@ -91,7 +91,7 @@ public class DashboardFragment extends Fragment {
             }
         });
 
-        api.getReservations(null).enqueue(new Callback<List<Reservation>>() {
+        api.getReservations(null, null).enqueue(new Callback<List<Reservation>>() {
             @Override
             public void onResponse(@NonNull Call<List<Reservation>> call, @NonNull Response<List<Reservation>> response) {
                 if (response.isSuccessful() && response.body() != null) {

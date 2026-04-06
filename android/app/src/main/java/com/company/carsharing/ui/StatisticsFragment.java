@@ -124,7 +124,7 @@ public class StatisticsFragment extends Fragment {
         binding.statTopUsers.removeAllViews();
 
         RetrofitClient.getApiService(new AuthRepository(requireContext()).getSessionPreferences())
-                .getReservations(null).enqueue(new Callback<List<Reservation>>() {
+                .getReservations(null, null).enqueue(new Callback<List<Reservation>>() {
                     @Override
                     public void onResponse(@NonNull Call<List<Reservation>> call, @NonNull Response<List<Reservation>> response) {
                         if (getActivity() == null) return;

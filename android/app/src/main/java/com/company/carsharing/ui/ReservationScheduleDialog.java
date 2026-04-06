@@ -254,7 +254,7 @@ public final class ReservationScheduleDialog {
             if (scheduled) {
                 final long slotStart = startMs[0];
                 final long slotEnd = endMs[0];
-                api.getReservations(null).enqueue(new Callback<List<Reservation>>() {
+                api.getReservations(null, null).enqueue(new Callback<List<Reservation>>() {
                     @Override
                     public void onResponse(Call<List<Reservation>> call, Response<List<Reservation>> response) {
                         if (fragment.getActivity() == null) {

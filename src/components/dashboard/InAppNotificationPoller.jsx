@@ -66,7 +66,7 @@ export default function InAppNotificationPoller({ userId, initialLicenceStatus }
         }
         prevDlRef.current = next;
 
-        const res = await apiReservations();
+        const res = await apiReservations({ mine: true });
         if (!Array.isArray(res) || cancelled) return;
         const now = Date.now();
         const selfId = u.id;

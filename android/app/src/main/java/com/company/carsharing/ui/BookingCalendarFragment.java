@@ -150,7 +150,7 @@ public class BookingCalendarFragment extends Fragment {
                 });
 
         RetrofitClient.getApiService(authRepo.getSessionPreferences())
-                .getReservations(null)
+                .getReservations(null, null)
                 .enqueue(new Callback<List<Reservation>>() {
                     @Override
                     public void onResponse(@NonNull Call<List<Reservation>> call, @NonNull Response<List<Reservation>> response) {

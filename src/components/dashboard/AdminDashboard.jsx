@@ -1783,7 +1783,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
               <h3 className="text-xl font-semibold text-slate-800">Add User</h3>
               <button type="button" onClick={() => setShowAddUser(false)} className="text-2xl text-slate-500 hover:text-slate-800 transition-colors">&times;</button>
             </div>
-            <p className="text-sm text-slate-500 mb-4">{t("admin.addUserBlurb")}</p>
+            <p className="text-sm text-slate-500 mb-4">Create a new user. They will appear in the list. For Local DB a default password is used if left empty.</p>
             {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>

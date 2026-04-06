@@ -1,5 +1,5 @@
 /**
- * GET /api/reservations – list reservations (user: own; admin: company)
+ * GET /api/reservations – list reservations (user: own; admin: company-wide unless mine=1)
  * POST /api/reservations – create reservation
  */
 
@@ -33,6 +33,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? undefined;
   const carId = searchParams.get("carId") ?? undefined;
+  const mineOnly =
+    searchParams.get("mine") === "1" ||
+    (searchParams.get("mine") || "").toLowerCase() === "true";
   const isAdmin = out.session.role === "ADMIN";
 
   if (provider === PROVIDERS.SQL_SERVER) {
@@ -46,7 +49,7 @@ export async function GET(request) {
     }
     try {
       const options = { status, carId };
-      if (!isAdmin) options.userId = out.session.userId;
+      if (!isAdmin || mineOnly) options.userId = out.session.userId;
       const list = await listSqlServerReservations(out.session.companyId, options);
       if (list == null) {
         return dataSourceNotConfiguredResponse(LAYERS.RESERVATIONS, "Could not load reservations from SQL Server. Check table and credentials.");
@@ -93,7 +96,7 @@ export async function GET(request) {
     status,
     carId,
   };
-  if (!isAdmin) options.userId = out.session.userId;
+  if (!isAdmin || mineOnly) options.userId = out.session.userId;
   const list = await listReservations(options);
   const withCodes = await Promise.all(list.map(ensureReservationHasCodes));
   return jsonResponse(

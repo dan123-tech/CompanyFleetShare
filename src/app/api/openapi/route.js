@@ -245,6 +245,12 @@ export async function GET() {
           parameters: [
             { name: "status", in: "query", schema: { type: "string", enum: ["ACTIVE", "COMPLETED", "CANCELLED"] } },
             { name: "carId", in: "query", schema: { type: "string" } },
+            {
+              name: "mine",
+              in: "query",
+              description: "If 1, return only the current user's reservations (including when role is ADMIN).",
+              schema: { type: "string", enum: ["1", "true"] },
+            },
           ],
           responses: { "200": { description: "List" } },
         },

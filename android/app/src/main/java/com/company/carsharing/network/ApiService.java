@@ -86,8 +86,9 @@ public interface ApiService {
     Call<List<Invite>> getInvites();
 
     // Reservations
+    /** @param mine pass "1" to list only the current user's reservations (needed for admins on "My reservations"). */
     @GET("api/reservations")
-    Call<List<Reservation>> getReservations(@Query("status") String status);
+    Call<List<Reservation>> getReservations(@Query("status") String status, @Query("mine") String mine);
     @GET("api/reservations/history")
     Call<List<Reservation>> getReservationHistory();
     @POST("api/reservations")

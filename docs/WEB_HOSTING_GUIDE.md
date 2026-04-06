@@ -55,6 +55,8 @@ Wait until the build shows **Ready**, then open the **Production URL** (or your 
 | `RESEND_API_KEY` | For email | Transactional email (welcome, invites, MFA codes, admin-created user) |
 | `EMAIL_FROM` | For email | Verified sender, e.g. `no-reply@yourdomain.com` |
 | `EMAIL_FROM_NAME` | Optional | Display name for emails |
+| `EMAIL_LOGO_URL` | Optional | PNG logo URL for email (some clients block SVG; default uses `/brand/fleetshare-logo-dark.svg` on your site) |
+| `EMAIL_PUBLIC_SITE_URL` | Optional | Same role as `NEXT_PUBLIC_APP_URL` for email links if the latter is unset |
 | `BLOB_READ_WRITE_TOKEN` | On Vercel | Driving licence file uploads (Vercel Blob); link store in **Vercel → Storage → Blob** |
 | `BLOB_PUT_ACCESS` | Optional | `private` (default) or `public` — must match Blob **store** type |
 | `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated origins allowed to call `/api/*` with cookies (mobile / multiple front-end hosts). If unset, `NEXT_PUBLIC_APP_URL` is used as a single allowed origin when set |

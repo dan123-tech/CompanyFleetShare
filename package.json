@@ -32,7 +32,6 @@
     "@opennextjs/cloudflare": "^1.18.0",
     "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.19.3",
-    "@vercel/blob": "^2.3.3",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "dotenv": "^17.4.0",
@@ -57,11 +56,9 @@
     "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "javascript-obfuscator": "^5.4.1",
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "typescript": "~5.9.3",
-    "webpack-obfuscator": "^3.6.0",
     "wrangler": "^4.80.0"
   }
 }

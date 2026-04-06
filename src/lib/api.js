@@ -105,16 +105,6 @@ export async function apiUserMfaUpdate(enabled, password) {
   return data;
 }
 
-export async function apiChangePassword(currentPassword, newPassword) {
-  const res = await fetch(
-    "/api/users/me/password",
-    getOpts("PATCH", { currentPassword, newPassword })
-  );
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Could not change password");
-  return data;
-}
-
 export async function apiLogout() {
   try {
     await fetch("/api/auth/logout", getOpts("POST"));
