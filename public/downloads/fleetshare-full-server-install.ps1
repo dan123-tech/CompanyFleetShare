@@ -105,7 +105,7 @@ if (-not $PublicIp) {
   Write-Warn "Could not detect LAN IPv4; using 127.0.0.1. Set environment variable FLEETSHARE_PUBLIC_HOST if you need another address."
 }
 
-$BaseUrl = "http://" + $PublicIp + ":" + $HttpPort
+$BaseUrl = ("http://" + $PublicIp + ":" + $HttpPort).TrimEnd("/")
 
 Write-Host "Repository: $Repo" -ForegroundColor DarkGray
 Write-Host "Target: $Root" -ForegroundColor DarkGray
@@ -138,26 +138,38 @@ if (-not (Test-Path $envFile)) {
   }
 }
 
-Get-Content $envFile | Where-Object { $_ -notmatch '^\s*(NEXT_PUBLIC_APP_URL|NEXTAUTH_URL)=' } | Set-Content $envFile -Encoding utf8
-Add-Content $envFile ("NEXT_PUBLIC_APP_URL=" + $BaseUrl)
-Add-Content $envFile ("NEXTAUTH_URL=" + $BaseUrl)
+function Remove-FleetshareEnvKeyLines {
+  param([string[]]$Lines)
+  $keys = @("NEXT_PUBLIC_APP_URL", "NEXTAUTH_URL", "AUTH_SECRET")
+  $result = @()
+  foreach ($line in $Lines) {
+    $drop = $false
+    foreach ($key in $keys) {
+      $esc = [regex]::Escape($key)
+      if ($line -match ("^\s*" + $esc + "=")) { $drop = $true; break }
+      if ($line -match ("^\s*#\s*" + $esc + "=")) { $drop = $true; break }
+    }
+    if (-not $drop) { $result += $line }
+  }
+  return $result
+}
 
-$authLine = Get-Content $envFile | Where-Object { $_ -match '^\s*AUTH_SECRET=' } | Select-Object -First 1
-if ($authLine) {
-  $parts = $authLine -split "=", 2
-  $secretVal = $parts[1].Trim().Trim([char]0x22).Trim([char]0x27)
-} else {
-  $secretVal = ""
+$rawLines = @()
+if (Test-Path $envFile) {
+  $c = Get-Content $envFile -ErrorAction SilentlyContinue
+  if ($null -ne $c) {
+    if ($c -is [System.Array]) { $rawLines = $c } else { $rawLines = @($c) }
+  }
 }
-if ($secretVal.Length -lt 32) {
-  Get-Content $envFile | Where-Object { $_ -notmatch '^\s*AUTH_SECRET=' } | Set-Content $envFile -Encoding utf8
-  $bytes = New-Object byte[] 32
-  $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
-  $rng.GetBytes($bytes)
-  $rand = [Convert]::ToBase64String($bytes)
-  Add-Content $envFile ("AUTH_SECRET=" + $rand)
-  Write-Ok "Set AUTH_SECRET (random)."
-}
+$keptLines = Remove-FleetshareEnvKeyLines -Lines $rawLines
+$bytes = New-Object byte[] 32
+$rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+$rng.GetBytes($bytes)
+$rand = [Convert]::ToBase64String($bytes)
+$newLines = $keptLines + "NEXT_PUBLIC_APP_URL=$BaseUrl" + "NEXTAUTH_URL=$BaseUrl" + "AUTH_SECRET=$rand"
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllLines($envFile, $newLines, $utf8NoBom)
+Write-Ok "Wrote NEXT_PUBLIC_APP_URL, NEXTAUTH_URL, and AUTH_SECRET (auto, UTF-8 no BOM for Docker)."
 
 if ($HttpPort -ne "3000" -or $LanPort -ne "3001") {
   $cf = Join-Path $Root "docker-compose.yml"

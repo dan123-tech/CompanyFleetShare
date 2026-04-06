@@ -6,8 +6,10 @@ What this does
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   • Clones the full FleetShare repo (Docker + Postgres + app + Caddy).
   • Detects this machine's IPv4 (or use FLEETSHARE_PUBLIC_HOST).
-  • Writes NEXT_PUBLIC_APP_URL and NEXTAUTH_URL as http://IP:PORT (default port 3000).
-  • Ensures AUTH_SECRET exists (generates one if missing).
+  • Writes NEXT_PUBLIC_APP_URL and NEXTAUTH_URL as http://IP:PORT (no trailing slash; default port 3000).
+  • Strips old or commented template lines from .env (matches dan123-tech/Licenta .env.example).
+  • Writes a new AUTH_SECRET every run of this installer (32+ chars). Re-run = new secret = users signed out.
+  • Windows: .env is written UTF-8 without BOM so Docker Compose reads variables reliably.
   • Optionally remaps host ports via FLEETSHARE_HTTP_PORT / FLEETSHARE_LAN_PROXY_PORT.
   • Runs the project's install.sh / install.ps1 (docker compose up).
 

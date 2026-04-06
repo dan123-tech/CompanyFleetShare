@@ -85,37 +85,33 @@ detect_ipv4() {
   echo "$ip"
 }
 
-merge_env_urls() {
-  local env_file="$1" base_url="$2"
+# Remove active and commented template lines so Docker Compose / Next see a single value (Licenta .env.example ships these as # comments).
+strip_fleetshare_env_keys() {
+  local env_file="$1"
   local tmp
   tmp="$(mktemp)"
-  if [[ -f "$env_file" ]]; then
-    grep -vE '^[[:space:]]*(NEXT_PUBLIC_APP_URL|NEXTAUTH_URL)=' "$env_file" >"$tmp" || true
-    mv "$tmp" "$env_file"
+  if [[ ! -f "$env_file" ]]; then
+    return
   fi
-  echo "NEXT_PUBLIC_APP_URL=${base_url}" >>"$env_file"
-  echo "NEXTAUTH_URL=${base_url}" >>"$env_file"
+  grep -vE '^[[:space:]]*(NEXT_PUBLIC_APP_URL|NEXTAUTH_URL|AUTH_SECRET)=' "$env_file" | \
+    grep -vE '^[[:space:]]*#[[:space:]]*(NEXT_PUBLIC_APP_URL|NEXTAUTH_URL|AUTH_SECRET)=' >"$tmp" || true
+  mv "$tmp" "$env_file"
 }
 
-ensure_auth_secret() {
-  local env_file="$1"
-  local line val len
-  line="$(grep -E '^[[:space:]]*AUTH_SECRET=' "$env_file" 2>/dev/null | head -1 || true)"
-  val="${line#*=}"
-  val="${val//\"/}"
-  val="${val//\'/}"
-  len="${#val}"
-  if [[ "$len" -lt 32 ]]; then
-    tmp="$(mktemp)"
-    grep -vE '^[[:space:]]*AUTH_SECRET=' "$env_file" >"$tmp" 2>/dev/null || true
-    mv "$tmp" "$env_file"
+write_fleetshare_auto_env() {
+  local env_file="$1" base_url="$2"
+  strip_fleetshare_env_keys "$env_file"
+  base_url="${base_url%/}"
+  {
+    echo "NEXT_PUBLIC_APP_URL=${base_url}"
+    echo "NEXTAUTH_URL=${base_url}"
     if command -v openssl >/dev/null 2>&1; then
-      echo "AUTH_SECRET=$(openssl rand -base64 32)" >>"$env_file"
-      echo -e "${GRN}Set AUTH_SECRET (random 32+ chars).${RST}"
+      echo "AUTH_SECRET=$(openssl rand -base64 32)"
     else
-      echo -e "${YLW}Add AUTH_SECRET= (32+ chars) to $env_file — openssl not found.${RST}"
+      echo "AUTH_SECRET=$(head -c 48 /dev/urandom 2>/dev/null | base64 | tr -d '\n' | cut -c1-44)"
     fi
-  fi
+  } >>"$env_file"
+  echo -e "${GRN}Wrote NEXT_PUBLIC_APP_URL, NEXTAUTH_URL, and AUTH_SECRET (auto).${RST}"
 }
 
 patch_compose_ports() {
@@ -158,6 +154,7 @@ fi
 
 HOST_IP="$(detect_ipv4)"
 BASE_URL="http://${HOST_IP}:${HTTP_PORT}"
+BASE_URL="${BASE_URL%/}"
 
 echo -e "${DIM}Repository:${RST} $REPO"
 echo -e "${DIM}Target:${RST} $ROOT"
@@ -187,8 +184,7 @@ if [[ ! -f .env ]]; then
   fi
 fi
 
-merge_env_urls ".env" "$BASE_URL"
-ensure_auth_secret ".env"
+write_fleetshare_auto_env ".env" "$BASE_URL"
 patch_compose_ports "docker-compose.yml"
 
 if [[ ! -x ./install.sh ]]; then
