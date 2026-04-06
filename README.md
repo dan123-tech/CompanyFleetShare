@@ -37,6 +37,12 @@ This repo includes **`.vscode/extensions.json`** (recommends [Neon - Serverless 
 
 Reload the window if the Neon MCP status in the sidebar looks stuck.
 
+## Put the app on the web (step-by-step)
+
+**Full guide:** [`docs/WEB_HOSTING_GUIDE.md`](docs/WEB_HOSTING_GUIDE.md) — Vercel + Neon, env checklist, Git push, CORS/security pointers, troubleshooting.
+
+---
+
 ## Vercel + Neon (recommended hosting)
 
 Stack: **Next.js on Vercel** and **PostgreSQL on [Neon](https://neon.tech)**. The build runs migrations then compiles the app (`vercel.json`).
@@ -103,3 +109,9 @@ API docs: http://localhost:3100/api-docs
 ## More documentation
 
 See the `docs/` folder (copied from the main project). Ignore SQL Server / multi–data-source sections for this edition.
+
+| Doc | Contents |
+|-----|----------|
+| **`docs/WEB_HOSTING_GUIDE.md`** | Deploy to the web, env vars, Git push, troubleshooting |
+| **`docs/SECURITY.md`** | SQLi, XSS, CORS (technical summary) |
+| **`docs/DATABASE.md`** | Postgres / Neon connection strings |

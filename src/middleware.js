@@ -1,10 +1,39 @@
 import { NextResponse } from "next/server";
+import {
+  getCorsAllowedOrigins,
+  matchCorsOrigin,
+  applyCorsHeaders,
+  applyCorsPreflightHeaders,
+} from "@/lib/security/cors";
 
 /**
- * Production-only security headers (HTTPS-oriented). HSTS can be disabled for local prod testing via DISABLE_HSTS=1.
+ * CORS for /api/* when CORS_ALLOWED_ORIGINS or NEXT_PUBLIC_APP_URL lists allowed browser origins.
+ * Security headers in production (HTTPS-oriented). HSTS can be disabled via DISABLE_HSTS=1.
  */
 export function middleware(request) {
+  const { pathname } = request.nextUrl;
+  const isApi = pathname.startsWith("/api/");
+  const allowedList = getCorsAllowedOrigins();
+  const originHeader = request.headers.get("origin");
+  const corsOrigin =
+    isApi && originHeader && allowedList.length > 0
+      ? matchCorsOrigin(originHeader, allowedList)
+      : null;
+
+  if (isApi && request.method === "OPTIONS") {
+    const res = new NextResponse(null, { status: 204 });
+    if (corsOrigin) {
+      applyCorsHeaders(res, corsOrigin);
+      applyCorsPreflightHeaders(res, request);
+    }
+    return res;
+  }
+
   const res = NextResponse.next();
+  if (corsOrigin) {
+    applyCorsHeaders(res, corsOrigin);
+  }
+
   if (process.env.NODE_ENV !== "production") return res;
 
   res.headers.set("X-Content-Type-Options", "nosniff");

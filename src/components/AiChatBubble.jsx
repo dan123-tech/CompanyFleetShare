@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
+import { escapeHtml, isSafeChatHref } from "@/lib/security/escape-html";
 
 /**
  * Floating AI Help-Bot chat widget.
@@ -181,27 +182,29 @@ export default function AiChatBubble() {
       return (
         <span key={i}>
           {part.split("\n").map((line, j, arr) => {
-            // Process inline markdown
-            let processed = line
-              // Bold
-              .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+            // Escape first so raw HTML/scripts from the model cannot become XSS; then limited markdown → HTML.
+            const safeLine = escapeHtml(line);
+            let processed = safeLine.replace(
+              /\*\*(.+?)\*\*/g,
+              '<strong class="font-semibold">$1</strong>'
+            );
 
             if (showCode) {
-              // Inline code: only show in dev mode
               processed = processed.replace(
                 /`([^`]+)`/g,
                 '<code class="px-1.5 py-0.5 bg-slate-200/80 text-violet-700 rounded text-xs font-mono">$1</code>'
               );
             } else {
-              // In user mode: strip backticks, keep the text inside
               processed = processed.replace(/`([^`]+)`/g, "$1");
             }
 
-            // Links
-            processed = processed.replace(
-              /\[([^\]]+)\]\(([^)]+)\)/g,
-              '<a href="$2" target="_blank" rel="noopener" class="text-blue-600 underline">$1</a>'
-            );
+            processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+              if (!isSafeChatHref(url)) {
+                return label;
+              }
+              const hrefEsc = escapeHtml(url.trim());
+              return `<a href="${hrefEsc}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">${label}</a>`;
+            });
 
             // Bullet lists
             const isBullet = /^(\s*[-*]\s)/.test(line);

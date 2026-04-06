@@ -1,7 +1,13 @@
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* Hide the floating Next.js dev tools badge (e.g. “N” in the corner) in development */
   devIndicators: false,
+  /** Do not publish browser source maps in production (default is false; set explicitly). */
+  productionBrowserSourceMaps: false,
   /**
    * Prisma `engineType = "client"` loads `query_compiler_bg.wasm` at runtime.
    * Next.js output file tracing often omits `.wasm` from `/var/task`, which breaks Vercel with ENOENT.
@@ -19,6 +25,49 @@ const nextConfig = {
    * To build with webpack instead of Turbopack, use the CLI: `next build --webpack`
    * (see `scripts/run-build.js` and `open-next.config.ts` buildCommand).
    */
+  /**
+   * Production client bundles only: rename identifiers to hexadecimal-style names (obfuscation).
+   * Aggressive features (control-flow, string encryption) stay off so React / Next stay stable.
+   * Set DISABLE_WEB_OBFUSCATION=1 to skip (e.g. while debugging a broken build).
+   */
+  webpack(config, { dev, isServer }) {
+    if (dev || isServer || process.env.DISABLE_WEB_OBFUSCATION === "1") {
+      return config;
+    }
+    try {
+      const WebpackObfuscator = require("webpack-obfuscator");
+      config.plugins.push(
+        new WebpackObfuscator(
+          {
+            compact: true,
+            simplify: true,
+            identifierNamesGenerator: "hexadecimal",
+            renameGlobals: false,
+            controlFlowFlattening: false,
+            deadCodeInjection: false,
+            debugProtection: false,
+            selfDefending: false,
+            stringArray: false,
+            transformObjectKeys: false,
+            unicodeEscapeSequence: false,
+            numbersToExpressions: false,
+            splitStrings: false,
+            log: false,
+          },
+          [
+            "**/framework-*.js",
+            "**/main-app-*.js",
+            "**/polyfills-*.js",
+            "**/webpack-*.js",
+            "**/react-refresh*.js",
+          ]
+        )
+      );
+    } catch (e) {
+      console.warn("[next.config] webpack-obfuscator not applied:", e?.message || e);
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
