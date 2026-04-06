@@ -65,9 +65,9 @@
       "pageSubtitle": "Panou web și aplicație Android",
       "intro": "Folosiți aplicația web în browser pentru experiența completă sau instalați aplicația Android pe dispozitivele companiei. Organizația poate găzdui totul pe infrastructura proprie.",
       "androidTitle": "Aplicație Android",
-      "androidBody": "Clientul Android se află în folderul android/ al proiectului FleetShare. IT poate genera un APK de release în Android Studio (Build → Build Bundle(s) / APK(s)) și îl distribuie intern (MDM, drive partajat sau magazinul intern).",
-      "directCta": "Descarcă APK / magazin",
-      "noDirectLink": "Nu există link public de instalare pentru acest site. Cereți administratorului APK-ul sau listarea din magazinul intern, sau compilați din surse.",
+      "androidBody": "Instalează clientul Android FleetShare pe telefon sau tabletă. Descarcă APK-ul de pe acest site, apoi deschide fișierul pentru instalare (poate fi nevoie să permiți surse necunoscute).",
+      "apkFileHint": "Este un pachet Android (.apk), nu un program Windows (.exe). Construiește APK-ul în Android Studio din folderul android/, apoi copiază-l în public/downloads/fleetshare.apk înainte de publicare.",
+      "directCta": "Descarcă aplicația Android (APK)",
       "webTitle": "Panou web",
       "webBody": "Fără instalare: înregistrare sau autentificare din orice browser modern. Funcționează cel mai bine când compania publică FleetShare la un URL de încredere.",
       "backHome": "← Înapoi acasă"

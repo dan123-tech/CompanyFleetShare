@@ -65,9 +65,9 @@
       "pageSubtitle": "Web dashboard and Android companion",
       "intro": "Use the web app in your browser for the full experience, or install the Android app on company devices. Your organisation can host everything on its own infrastructure.",
       "androidTitle": "Android app",
-      "androidBody": "The Android client lives in the android/ folder of the FleetShare project. IT can build a release APK in Android Studio (Build → Build Bundle(s) / APK(s)) and distribute it internally (MDM, shared drive, or your app store).",
-      "directCta": "Download APK / store",
-      "noDirectLink": "No public install link is configured for this site. Ask your administrator for the APK or internal store listing, or build from the project source.",
+      "androidBody": "Install the FleetShare Android client on your phone or tablet. Download the APK from this site, then open it to install (you may need to allow installs from unknown sources).",
+      "apkFileHint": "This is an Android package (.apk), not a Windows program (.exe). Build the APK in Android Studio from the android/ folder, then copy it to public/downloads/fleetshare.apk before deploy.",
+      "directCta": "Download Android app (APK)",
       "webTitle": "Web dashboard",
       "webBody": "No install required: register or sign in from any modern browser. Works best when your company deploys FleetShare on a URL your team trusts.",
       "backHome": "← Back to home"

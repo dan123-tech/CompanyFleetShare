@@ -1,0 +1,9 @@
+Place your release Android app here as:
+
+  fleetshare.apk
+
+Build it in Android Studio: android/ app module -> Build -> Build Bundle(s) / APK(s) -> APK.
+
+The website serves this file at /downloads/fleetshare.apk (Download page and optional env NEXT_PUBLIC_ANDROID_DOWNLOAD_URL).
+
+Note: Android installs .apk packages, not Windows .exe files.

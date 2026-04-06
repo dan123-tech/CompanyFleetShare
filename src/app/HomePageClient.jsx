@@ -156,29 +156,30 @@ export default function HomePageClient() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 pb-12 lg:pb-16">
           <div
-            className="col-span-2 lg:col-span-4 p-4 sm:p-6 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:items-start gap-4 min-w-0"
+            className="col-span-2 lg:col-span-4 p-4 sm:p-6 rounded-xl sm:rounded-2xl flex flex-col items-center text-center gap-4 min-w-0"
             style={{
-              background: "rgba(24, 95, 165, 0.12)",
-              border: "1px solid rgba(24, 95, 165, 0.35)",
+              background: "rgba(245, 166, 35, 0.1)",
+              border: "1px solid rgba(245, 166, 35, 0.38)",
             }}
           >
             <div
               className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: "rgba(24, 95, 165, 0.25)",
-                border: "1px solid rgba(24, 95, 165, 0.45)",
+                background: "rgba(245, 166, 35, 0.18)",
+                border: "1px solid rgba(245, 166, 35, 0.45)",
               }}
             >
-              <Server className="w-5 h-5 sm:w-[22px] sm:h-[22px]" style={{ color: "#7ec0ea" }} strokeWidth={1.6} />
+              <Server className="w-5 h-5 sm:w-[22px] sm:h-[22px]" style={{ color: COL.accent }} strokeWidth={1.6} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 w-full max-w-3xl mx-auto">
               <h3
-                className="font-semibold text-[14px] sm:text-base mb-1.5 leading-tight text-white"
+                className="font-semibold text-[14px] sm:text-base mb-1.5 leading-tight"
+                style={{ color: COL.accent }}
               >
                 {t("landing.selfHostedTitle")}
               </h3>
               <p
-                className="text-[12px] sm:text-sm leading-relaxed sm:leading-relaxed max-w-3xl"
+                className="text-[12px] sm:text-sm leading-relaxed sm:leading-relaxed"
                 style={{ color: "rgba(255,255,255,0.55)" }}
               >
                 {t("landing.selfHostedDesc")}

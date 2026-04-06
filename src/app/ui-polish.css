@@ -29,12 +29,12 @@
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Subtle page depth */
+/* Canvas behind the app: dark shell + soft glow so overscroll (mobile / Edge) never shows light gray */
 body {
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(29, 78, 216, 0.06), transparent 50%),
-    radial-gradient(900px 500px at 100% 0%, rgba(30, 64, 175, 0.05), transparent 45%),
-    var(--main-bg);
+    radial-gradient(1200px 600px at 10% -10%, rgba(29, 78, 216, 0.14), transparent 52%),
+    radial-gradient(900px 500px at 100% 0%, rgba(30, 64, 175, 0.1), transparent 48%),
+    var(--sidebar-bg);
 }
 
 /* ─── Typography hierarchy ───────────────────────────────── */

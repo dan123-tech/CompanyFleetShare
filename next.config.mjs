@@ -4,6 +4,23 @@ const require = createRequire(import.meta.url);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: "/downloads/fleetshare.apk",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/vnd.android.package-archive",
+          },
+          {
+            key: "Content-Disposition",
+            value: "attachment; filename=\"FleetShare.apk\"",
+          },
+        ],
+      },
+    ];
+  },
   /* Hide the floating Next.js dev tools badge (e.g. “N” in the corner) in development */
   devIndicators: false,
   /** Do not publish browser source maps in production (default is false; set explicitly). */

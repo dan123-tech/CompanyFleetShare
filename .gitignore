@@ -70,4 +70,5 @@ android/local.properties
 android/*.iml
 android/captures/
 *.apk
+!public/downloads/fleetshare.apk
 *.aab

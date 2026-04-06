@@ -59,8 +59,22 @@
 /* ─── Base ────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
+/**
+ * html + body share the dark shell color so mobile / Edge “rubber band” overscroll
+ * does not flash white (or light gray) behind pages that use min-h-screen dark UIs.
+ * Login, register, dashboard, and api-docs paint their own light full-bleed layers.
+ */
+html {
+  min-height: 100%;
+  min-height: 100dvh;
+  background-color: var(--sidebar-bg);
+}
+
 body {
-  background: var(--main-bg);
+  min-height: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  background-color: var(--sidebar-bg);
   color: var(--foreground);
   font-family: var(--font-inter), ui-sans-serif, system-ui, "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;

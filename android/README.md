@@ -20,14 +20,26 @@ Java Android app using **MVVM**, **Retrofit 2**, **OkHttp**, and **Material Desi
 2. Wait for Gradle sync (and wrapper download if needed).
 3. Set **Build Configuration** to `app` and pick an emulator or device.
 
-## Base URL (backend)
+## API base URL (production / Vercel + Neon)
 
-The app talks to the same backend as the web app. Default base URL is set in `RetrofitClient.java`:
+The Android app calls the **same HTTPS API** as the web app (your deployed Next.js server, which uses Neon or another Postgres).
 
-- **Emulator:** `http://10.0.2.2:3000/` (localhost of the host machine)
-- **Physical device:** use your PC’s IP, e.g. `http://192.168.1.100:3000/`
+1. Open **`android/gradle.properties`**.
+2. Set **`fleetshareApiBaseUrl`** to your public site URL, including `https://` and a trailing slash is optional (the app normalizes it).
 
-Change `BASE_URL` in `app/src/main/java/com/company/carsharing/network/RetrofitClient.java` to match your setup.
+Example:
+
+```properties
+fleetshareApiBaseUrl=https://your-project.vercel.app/
+```
+
+3. Sync Gradle and rebuild. The value is compiled into **`R.string.api_base_url`**; there is no server URL field on the login screen.
+
+For **local development** against `npm run dev`, temporarily point `fleetshareApiBaseUrl` at your machine (e.g. `http://10.0.2.2:3100/` on emulator or `http://192.168.x.x:3100/` on a phone). Use **http** only for dev; production should use **https**.
+
+### Publishing the APK on the website
+
+After you build a release APK, copy it to the web repo as **`public/downloads/fleetshare.apk`**. The Next.js site serves it at **`/downloads/fleetshare.apk`** and links it from the **Download** page. (Android uses **.apk**, not Windows **.exe**.)
 
 ## Authentication and security
 

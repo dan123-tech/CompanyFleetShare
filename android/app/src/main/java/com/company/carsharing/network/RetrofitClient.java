@@ -9,7 +9,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
- * Singleton Retrofit client. Base URL from {@link CarSharingApplication} (login screen / prefs).
+ * Singleton Retrofit client. Base URL from {@link CarSharingApplication} (build-time {@code R.string.api_base_url}).
  */
 public final class RetrofitClient {
 

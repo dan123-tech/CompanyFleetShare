@@ -14,6 +14,16 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        // Public HTTPS origin of your FleetShare web app (Vercel + Neon, etc.). Override in android/gradle.properties.
+        def base = project.findProperty("fleetshareApiBaseUrl")
+        if (base == null || base.toString().trim().isEmpty()) {
+            base = "https://YOUR-VERCEL-APP.vercel.app/"
+        }
+        base = base.toString().trim()
+        if (!base.endsWith("/")) {
+            base = base + "/"
+        }
+        resValue "string", "api_base_url", base
     }
     buildTypes {
         release {

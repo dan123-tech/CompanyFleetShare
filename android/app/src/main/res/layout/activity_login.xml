@@ -98,31 +98,6 @@
                 android:textSize="13sp"
                 android:textColor="@color/on_surface_variant" />
 
-            <!-- Server URL -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/serverUrlLayout"
-                style="@style/AppInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/server_url_hint">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/serverUrl"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textUri"
-                    android:maxLines="2"
-                    android:text="@string/default_api_url_hint" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="20dp"
-                android:text="@string/server_url_helper"
-                android:textSize="11sp"
-                android:textColor="@color/on_surface_variant" />
-
             <!-- Email -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/emailLayout"

@@ -6,14 +6,25 @@ import { useI18n } from "@/i18n/I18nProvider";
 
 const COL = { base: "#0c1220", primary: "#185fa5", accent: "#f5a623" };
 
-/** Set NEXT_PUBLIC_ANDROID_DOWNLOAD_URL to an APK, Play link, or internal store URL. */
-const ANDROID_URL =
-  typeof process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL === "string"
-    ? process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL.trim()
-    : "";
+/** Served from public/downloads/fleetshare.apk — override with full URL if hosted elsewhere. */
+const DEFAULT_ANDROID_APK_PATH = "/downloads/fleetshare.apk";
+
+function getAndroidDownloadHref() {
+  const env =
+    typeof process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL === "string"
+      ? process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL.trim()
+      : "";
+  return env || DEFAULT_ANDROID_APK_PATH;
+}
+
+function isSameOriginApkPath(href) {
+  return href.startsWith("/") && !href.startsWith("//");
+}
 
 export default function DownloadPageClient() {
   const { t } = useI18n();
+  const androidHref = getAndroidDownloadHref();
+  const apkDownloadAttr = isSameOriginApkPath(androidHref) ? { download: "FleetShare.apk" } : {};
 
   return (
     <div className="min-h-screen" style={{ background: COL.base }}>
@@ -112,24 +123,23 @@ export default function DownloadPageClient() {
                 <h2 className="text-base font-semibold mb-2" style={{ color: COL.accent }}>
                   {t("landing.download.androidTitle")}
                 </h2>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-sm leading-relaxed mb-2" style={{ color: "rgba(255,255,255,0.5)" }}>
                   {t("landing.download.androidBody")}
                 </p>
-                {ANDROID_URL ? (
-                  <a
-                    href={ANDROID_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl text-white text-sm font-semibold bg-[#185fa5] hover:bg-[#1d4ed8] transition-colors"
-                  >
-                    <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
-                    {t("landing.download.directCta")}
-                  </a>
-                ) : (
-                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.38)" }}>
-                    {t("landing.download.noDirectLink")}
-                  </p>
-                )}
+                <p className="text-xs leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {t("landing.download.apkFileHint")}
+                </p>
+                <a
+                  href={androidHref}
+                  {...apkDownloadAttr}
+                  {...(!isSameOriginApkPath(androidHref)
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                  className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl text-white text-sm font-semibold bg-[#185fa5] hover:bg-[#1d4ed8] transition-colors"
+                >
+                  <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
+                  {t("landing.download.directCta")}
+                </a>
               </div>
             </div>
           </div>

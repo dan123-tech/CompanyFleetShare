@@ -9,7 +9,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.company.carsharing.CarSharingApplication;
 import com.company.carsharing.R;
 import com.company.carsharing.data.repository.AuthRepository;
 import com.company.carsharing.databinding.ActivityRegisterBinding;
@@ -31,14 +30,6 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         authRepository = new AuthRepository(this);
-
-        if (binding.serverUrl != null) {
-            String u = CarSharingApplication.getApiBaseUrl();
-            if (u.endsWith("/")) {
-                u = u.substring(0, u.length() - 1);
-            }
-            binding.serverUrl.setText(u);
-        }
 
         binding.buttonRegister.setOnClickListener(v -> register());
         binding.linkLogin.setOnClickListener(v -> {
@@ -72,10 +63,6 @@ public class RegisterActivity extends AppCompatActivity {
         if (!password.equals(confirm)) {
             showError(getString(R.string.register_passwords_mismatch));
             return;
-        }
-
-        if (binding.serverUrl != null && binding.serverUrl.getText() != null) {
-            CarSharingApplication.setApiBaseUrl(binding.serverUrl.getText().toString());
         }
 
         binding.errorText.setVisibility(View.GONE);

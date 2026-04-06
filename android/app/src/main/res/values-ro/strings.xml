@@ -26,8 +26,6 @@
     <string name="booking_end_title">Rezervare se încheie</string>
     <string name="booking_end_body">A sosit ora de sfârșit a rezervării.</string>
     <string name="booking_end_body_car">Rezervarea pentru %1$s a ajuns la sfârșitul intervalului.</string>
-    <string name="server_url_hint">URL server API</string>
-    <string name="server_url_helper">Emulator: http://10.0.2.2:3000 — Telefon în aceeași rețea Wi‑Fi: http://IP-PC:3000 (ipconfig, adresă IPv4). PC-ul trebuie să ruleze npm run dev.</string>
     <string name="new_reservation_title">Rezervare nouă</string>
     <string name="reserve_car_title_fmt">Rezervă: %1$s</string>
     <string name="reservation_dialog_hints">Nu poți suprapune două rezervări proprii pe mașini diferite.\n\nPlanifică: alege început și sfârșit astfel încât mașina să fie a ta doar în acel interval. Mașina rămâne disponibilă altora până la începutul slotului tău, dacă intervalele nu se suprapun.\n\nRezervă acum: începe imediat. Dacă alt utilizator are deja un slot viitor pe această mașină, sesiunea ta se încheie când începe rezervarea lui.</string>
@@ -97,7 +95,6 @@
     <string name="keep_me_logged_in">Păstrează-mă autentificat</string>
     <string name="use_fingerprint">Autentificare cu amprentă</string>
     <string name="create_your_account">Creează contul</string>
-    <string name="default_api_url_hint">http://10.0.2.2:3000/</string>
     <string name="use_password">Folosește parola</string>
     <string name="welcome_user_fmt">%1$s – Bine ai venit, %2$s</string>
     <string name="account_created_login">Cont creat. Te rugăm să te autentifici.</string>

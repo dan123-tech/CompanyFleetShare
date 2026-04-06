@@ -26,8 +26,6 @@
     <string name="booking_end_title">Booking ending</string>
     <string name="booking_end_body">Your car reservation end time has been reached.</string>
     <string name="booking_end_body_car">Your reservation for %1$s has reached its end time.</string>
-    <string name="server_url_hint">API server URL</string>
-    <string name="server_url_helper">Emulator: http://10.0.2.2:3000 — Phone on same Wi‑Fi: http://YOUR-PC-IP:3000 (run ipconfig, IPv4 Address). Your PC must run npm run dev.</string>
     <string name="new_reservation_title">New reservation</string>
     <string name="reserve_car_title_fmt">Reserve: %1$s</string>
     <string name="reservation_dialog_hints">You cannot overlap two of your own bookings on different cars (e.g. 13:55–14:00 on one car and 13:57–14:50 on another).\n\nSchedule: pick start and end so the car is yours only in that window. The car stays available for others until your slot starts, if their times do not overlap yours.\n\nReserve now: starts immediately. If another user already booked a future slot on this car, your session ends when their booking starts.</string>
@@ -99,7 +97,6 @@
     <string name="keep_me_logged_in">Keep me logged in</string>
     <string name="use_fingerprint">Use fingerprint to log in</string>
     <string name="create_your_account">Create your account</string>
-    <string name="default_api_url_hint">http://10.0.2.2:3000/</string>
     <string name="use_password">Use password</string>
     <string name="welcome_user_fmt">%1$s – Welcome, %2$s</string>
     <string name="account_created_login">Account created. Please log in.</string>

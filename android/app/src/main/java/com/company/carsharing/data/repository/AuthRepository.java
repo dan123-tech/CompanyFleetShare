@@ -83,7 +83,7 @@ public class AuthRepository {
                     String msg = t.getMessage();
                     if (msg == null) msg = "Network error";
                     if (t instanceof java.net.ConnectException) {
-                        msg = "Cannot reach server. On a real phone use your PC's Wi‑Fi IP (e.g. http://192.168.x.x:3000) and run npm run dev on the laptop.";
+                        msg = "Cannot reach server. Check your internet connection and that the app is built with the correct API URL in android/gradle.properties (fleetshareApiBaseUrl).";
                     }
                     callback.onError(msg);
                 } catch (Exception e) {
