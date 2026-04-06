@@ -13,7 +13,11 @@ Do not replace Prisma or parameterized `mssql` calls with string-built SQL using
 
 - **React** escapes text in JSX by default.
 - Places that render **HTML strings** (e.g. AI chat markdown) use **HTML escaping** and **safe link URL checks** before rendering.
-- **Content Security Policy** is not enabled globally (Next.js often needs relaxed `script-src`); defense relies on escaping, React, and HTTP headers below.
+- **Content Security Policy** is enabled with a baseline policy in production (see `next.config.mjs` and `src/middleware.js`). `script-src` / `style-src` include `'unsafe-inline'` where required for Next.js; primary XSS defense remains React escaping and safe rendering for rich content.
+
+## CSRF (API)
+
+- JSON login/register and related auth endpoints validate **`Origin` / `Referer`** against the deployed origin (and `CORS_ALLOWED_ORIGINS` / `NEXT_PUBLIC_APP_URL`). See `src/lib/security/csrf.js` and **`IMPLEMENTATION_LOG.md` §3.3**.
 
 ## CORS
 
@@ -24,6 +28,6 @@ Do not replace Prisma or parameterized `mssql` calls with string-built SQL using
 
 Credentials (`cookies`) require an explicit origin (not `*`). Preflight `OPTIONS` is handled in middleware for `/api/*`.
 
-## Related headers (middleware)
+## Related headers (middleware + Next config)
 
-Production responses also set `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` (see `src/middleware.js`).
+Production responses set CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, cross-origin policies, and HSTS when appropriate. See `src/middleware.js`, `next.config.mjs`, and **`IMPLEMENTATION_LOG.md`** for the full list.

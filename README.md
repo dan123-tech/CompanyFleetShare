@@ -113,5 +113,6 @@ See the `docs/` folder (copied from the main project). Ignore SQL Server / multi
 | Doc | Contents |
 |-----|----------|
 | **`docs/WEB_HOSTING_GUIDE.md`** | Deploy to the web, env vars, Git push, troubleshooting |
-| **`docs/SECURITY.md`** | SQLi, XSS, CORS (technical summary) |
+| **`docs/IMPLEMENTATION_LOG.md`** | What was built: installers, download UX, security hardening |
+| **`docs/SECURITY.md`** | SQLi, XSS, CORS, CSRF, headers (technical summary) |
 | **`docs/DATABASE.md`** | Postgres / Neon connection strings |
