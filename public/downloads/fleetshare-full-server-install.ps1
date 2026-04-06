@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Clones the full FleetShare app from GitHub (default repo: dan123-tech/Licenta), sets NEXT_PUBLIC_APP_URL / NEXTAUTH_URL
-  from this machine's IPv4 and optional ports, then runs install.ps1 (Docker Compose).
+  from this machine's IPv4 and host ports (auto-picks free ports from 3000/3001 if unset), then runs install.ps1 (Docker Compose).
 
   Download from your company /download page. Requires Docker Desktop + git.
 
@@ -37,15 +37,21 @@ if ($env:FLEETSHARE_INSTALL_DIR -and $env:FLEETSHARE_INSTALL_DIR.Trim()) {
 } else {
   $DirName = "Licenta"
 }
-if ($env:FLEETSHARE_HTTP_PORT -and $env:FLEETSHARE_HTTP_PORT.Trim()) {
-  $HttpPort = $env:FLEETSHARE_HTTP_PORT.Trim()
-} else {
-  $HttpPort = "3000"
-}
-if ($env:FLEETSHARE_LAN_PROXY_PORT -and $env:FLEETSHARE_LAN_PROXY_PORT.Trim()) {
-  $LanPort = $env:FLEETSHARE_LAN_PROXY_PORT.Trim()
-} else {
-  $LanPort = "3001"
+
+# True if we can bind TCP on this host port (nothing else listening on IPv4 any).
+function Test-TcpPortFree {
+  param([int]$Port)
+  try {
+    $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Any, $Port)
+    if ($listener.PSObject.Properties["ExclusiveAddressUse"]) {
+      $listener.ExclusiveAddressUse = $true
+    }
+    $listener.Start()
+    $listener.Stop()
+    return $true
+  } catch {
+    return $false
+  }
 }
 
 function Write-Step { param($Msg) Write-Host "==> $Msg" -ForegroundColor Cyan }
@@ -83,6 +89,46 @@ if ($LASTEXITCODE -ne 0) {
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
   Write-Err "git not found. Install Git for Windows."
   exit 1
+}
+
+if ($env:FLEETSHARE_HTTP_PORT -and $env:FLEETSHARE_HTTP_PORT.Trim()) {
+  $HttpPort = $env:FLEETSHARE_HTTP_PORT.Trim()
+} else {
+  $HttpPort = $null
+  for ($p = 3000; $p -le 3089; $p++) {
+    if (Test-TcpPortFree -Port $p) {
+      $HttpPort = [string]$p
+      break
+    }
+  }
+  if (-not $HttpPort) {
+    Write-Err "No free TCP port between 3000 and 3089 for the web app."
+    exit 1
+  }
+  if ($HttpPort -ne "3000") {
+    Write-Warn ("Host port 3000 is in use; using " + $HttpPort + " for the web app.")
+  }
+}
+
+if ($env:FLEETSHARE_LAN_PROXY_PORT -and $env:FLEETSHARE_LAN_PROXY_PORT.Trim()) {
+  $LanPort = $env:FLEETSHARE_LAN_PROXY_PORT.Trim()
+} else {
+  $LanPort = $null
+  $hp = [int]$HttpPort
+  for ($q = 3001; $q -le 3099; $q++) {
+    if ($q -eq $hp) { continue }
+    if (Test-TcpPortFree -Port $q) {
+      $LanPort = [string]$q
+      break
+    }
+  }
+  if (-not $LanPort) {
+    Write-Err ("No free TCP port for LAN/mobile proxy (3001-3099) distinct from app port " + $HttpPort + ".")
+    exit 1
+  }
+  if ($LanPort -ne "3001") {
+    Write-Warn ("Host port 3001 is in use or conflicts with the app port; using " + $LanPort + " for the second mapping.")
+  }
 }
 
 # Do not use $HostIp - PowerShell may parse it as automatic $Host + "Ip" and break the script.

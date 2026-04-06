@@ -15,16 +15,14 @@
 # Environment (optional):
 #   FLEETSHARE_SERVER_REPO   Git URL (default: https://github.com/dan123-tech/Licenta.git)
 #   FLEETSHARE_INSTALL_DIR   Folder name to clone into (default: Licenta)
-#   FLEETSHARE_HTTP_PORT     Host port mapped to app :3000 (default: 3000)
-#   FLEETSHARE_LAN_PROXY_PORT Host port for :3001 (default: 3001)
+#   FLEETSHARE_HTTP_PORT     Host port for app :3000 (default: auto — first free from 3000 upward)
+#   FLEETSHARE_LAN_PROXY_PORT Host port for :3001 (default: auto — first free from 3001, not same as HTTP)
 #   FLEETSHARE_PUBLIC_HOST   If set, skip IP detection and use this host (e.g. fleet.company.com)
 set -euo pipefail
 
 REPO_DEFAULT="https://github.com/dan123-tech/Licenta.git"
 REPO="${FLEETSHARE_SERVER_REPO:-$REPO_DEFAULT}"
 DIR_NAME="${FLEETSHARE_INSTALL_DIR:-Licenta}"
-HTTP_PORT="${FLEETSHARE_HTTP_PORT:-3000}"
-LAN_PORT="${FLEETSHARE_LAN_PROXY_PORT:-3001}"
 
 PARENT="${1:-.}"
 if [[ ! -d "$PARENT" ]]; then
@@ -64,6 +62,67 @@ EOF
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || { echo -e "${RED}Missing command: $1${RST}"; exit 1; }
+}
+
+# Returns 0 if something is listening on TCP port $1 (host).
+tcp_port_in_use() {
+  local port=$1
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -iTCP:"$port" -sTCP:LISTEN -P -n >/dev/null 2>&1
+    return $?
+  fi
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | grep -qE ":${port}[[:space:]]"
+    return $?
+  fi
+  if command -v netstat >/dev/null 2>&1; then
+    netstat -tuln 2>/dev/null | grep -qE ":${port}[[:space:]]"
+    return $?
+  fi
+  return 1
+}
+
+resolve_host_ports() {
+  if [[ -n "${FLEETSHARE_HTTP_PORT:-}" ]]; then
+    HTTP_PORT="$FLEETSHARE_HTTP_PORT"
+  else
+    HTTP_PORT=""
+    local p
+    for p in {3000..3089}; do
+      if ! tcp_port_in_use "$p"; then
+        HTTP_PORT=$p
+        break
+      fi
+    done
+    if [[ -z "$HTTP_PORT" ]]; then
+      echo -e "${RED}No free TCP port between 3000 and 3089 for the web app.${RST}"
+      exit 1
+    fi
+    if [[ "$HTTP_PORT" != "3000" ]]; then
+      echo -e "${YLW}Host port 3000 is in use; using ${HTTP_PORT} for the web app.${RST}"
+    fi
+  fi
+
+  if [[ -n "${FLEETSHARE_LAN_PROXY_PORT:-}" ]]; then
+    LAN_PORT="$FLEETSHARE_LAN_PROXY_PORT"
+  else
+    LAN_PORT=""
+    local q=3001
+    while [[ $q -le 3099 ]]; do
+      if ! tcp_port_in_use "$q" && [[ "$q" != "$HTTP_PORT" ]]; then
+        LAN_PORT=$q
+        break
+      fi
+      q=$((q + 1))
+    done
+    if [[ -z "$LAN_PORT" ]]; then
+      echo -e "${RED}No free TCP port for LAN/mobile proxy (3001-3099) that differs from app port ${HTTP_PORT}.${RST}"
+      exit 1
+    fi
+    if [[ "$LAN_PORT" != "3001" ]]; then
+      echo -e "${YLW}Host port 3001 is in use or conflicts with the app port; using ${LAN_PORT} for the second mapping.${RST}"
+    fi
+  fi
 }
 
 detect_ipv4() {
@@ -151,6 +210,8 @@ else
   echo -e "${RED}Docker Compose not found.${RST}"
   exit 1
 fi
+
+resolve_host_ports
 
 HOST_IP="$(detect_ipv4)"
 BASE_URL="http://${HOST_IP}:${HTTP_PORT}"

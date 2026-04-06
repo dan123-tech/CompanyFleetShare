@@ -6,11 +6,11 @@ What this does
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   • Clones the full FleetShare repo (Docker + Postgres + app + Caddy).
   • Detects this machine's IPv4 (or use FLEETSHARE_PUBLIC_HOST).
-  • Writes NEXT_PUBLIC_APP_URL and NEXTAUTH_URL as http://IP:PORT (no trailing slash; default port 3000).
+  • Writes NEXT_PUBLIC_APP_URL and NEXTAUTH_URL as http://IP:PORT (no trailing slash; default port 3000 if free, else next free 3000-3089).
   • Strips old or commented template lines from .env (matches dan123-tech/Licenta .env.example).
   • Writes a new AUTH_SECRET every run of this installer (32+ chars). Re-run = new secret = users signed out.
   • Windows: .env is written UTF-8 without BOM so Docker Compose reads variables reliably.
-  • Optionally remaps host ports via FLEETSHARE_HTTP_PORT / FLEETSHARE_LAN_PROXY_PORT.
+  • Optional: set FLEETSHARE_HTTP_PORT / FLEETSHARE_LAN_PROXY_PORT to pin ports; otherwise the second mapping auto-picks 3001+ (skips the app port).
   • Runs the project's install.sh / install.ps1 (docker compose up).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -50,7 +50,7 @@ Windows (PowerShell)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 After install
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • Browser (LAN): http://SERVER_IP:3000  (or the port you chose)
+  • Browser (LAN): http://SERVER_IP:PORT  (script prints the chosen port; default 3000 if free)
   • Stop: cd licenta_dani-main && ./install.sh --down   (or install.ps1 -Down)
   • Optional AI licence validator: see /download#ai-validator on the marketing site
 
