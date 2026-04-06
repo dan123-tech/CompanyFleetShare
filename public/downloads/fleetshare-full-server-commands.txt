@@ -45,7 +45,7 @@ Windows (PowerShell)
   Optional:
   .\fleetshare-full-server-install.ps1 -Parent ..
   $env:FLEETSHARE_HTTP_PORT = "8080"; .\fleetshare-full-server-install.ps1
-  $env:FLEETSHARE_PUBLIC_HOST = "192.168.1.50"; .\fleetshare-full-server-install.ps1
+  $env:FLEETSHARE_PUBLIC_HOST = "your.public.host.name"; .\fleetshare-full-server-install.ps1
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 After install

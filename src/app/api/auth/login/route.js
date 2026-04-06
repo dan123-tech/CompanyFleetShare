@@ -18,6 +18,7 @@ import {
   MFA_OTP_TTL_MS,
 } from "@/lib/auth/mfa-otp";
 import { sendMfaLoginCodeEmail } from "@/lib/email";
+import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -101,6 +102,9 @@ function loginErrorResponse(e) {
 
 export async function POST(request) {
   try {
+    const originCheck = assertTrustedRequestOrigin(request);
+    if (!originCheck.ok) return errorResponse(originCheck.reason, 403);
+
     let body;
     try {
       body = await request.json();

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { findUserByEmail, createUser } from "@/lib/users";
 import { jsonResponse, errorResponse } from "@/lib/api-helpers";
 import { sendWelcomeEmail } from "@/lib/email";
+import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request) {
+  const originCheck = assertTrustedRequestOrigin(request);
+  if (!originCheck.ok) return errorResponse(originCheck.reason, 403);
+
   const parsed = bodySchema.safeParse(await request.json());
   if (!parsed.success) {
     let msg = "Invalid input";

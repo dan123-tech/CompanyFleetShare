@@ -9,6 +9,7 @@ import { getSession } from "@/lib/auth";
 import { verifyPassword, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,9 @@ const bodySchema = z.object({
 });
 
 export async function PATCH(request) {
+  const originCheck = assertTrustedRequestOrigin(request);
+  if (!originCheck.ok) return errorResponse(originCheck.reason, 403);
+
   let session;
   try {
     session = await getSession();

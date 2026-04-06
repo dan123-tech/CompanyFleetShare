@@ -10,6 +10,7 @@ import { errorResponse } from "@/lib/api-helpers";
 import { prisma } from "@/lib/db";
 import { buildLoginSuccessResponse } from "@/lib/auth/issue-login-session";
 import { hashMfaOtp, timingSafeEqualHex, MFA_MAX_ATTEMPTS } from "@/lib/auth/mfa-otp";
+import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -28,6 +29,9 @@ async function clearMfaOtp(userId) {
 }
 
 export async function POST(request) {
+  const originCheck = assertTrustedRequestOrigin(request);
+  if (!originCheck.ok) return errorResponse(originCheck.reason, 403);
+
   let body;
   try {
     body = await request.json();

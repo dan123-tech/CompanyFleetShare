@@ -36,14 +36,35 @@ export function middleware(request) {
 
   if (process.env.NODE_ENV !== "production") return res;
 
+  const csp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https:",
+    "style-src 'self' 'unsafe-inline' https:",
+    "script-src 'self' 'unsafe-inline' https:",
+    "connect-src 'self' https: wss:",
+    "upgrade-insecure-requests",
+  ].join("; ");
+
   res.headers.set("X-Content-Type-Options", "nosniff");
-  res.headers.set("X-Frame-Options", "SAMEORIGIN");
+  res.headers.set("X-Frame-Options", "DENY");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.headers.set("Content-Security-Policy", csp);
+  res.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
   // HSTS only over HTTPS — never send on http:// (e.g. LAN IP) or browsers may behave oddly.
   if (process.env.DISABLE_HSTS !== "1" && request.nextUrl.protocol === "https:") {
     res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+
+  if (!isApi && (request.method === "GET" || request.method === "HEAD")) {
+    res.headers.set("Cache-Control", "no-store, max-age=0");
   }
 
   return res;

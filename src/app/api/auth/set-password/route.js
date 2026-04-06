@@ -11,6 +11,7 @@ import { hashPassword, writeSessionCookie } from "@/lib/auth";
 import { normalizeClientType, rotateUserSessionToken } from "@/lib/auth/session-tokens";
 import { prisma } from "@/lib/db";
 import { errorResponse } from "@/lib/api-helpers";
+import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
 const bodySchema = z.object({
   token: z.string().min(1),
@@ -18,6 +19,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request) {
+  const originCheck = assertTrustedRequestOrigin(request);
+  if (!originCheck.ok) return errorResponse(originCheck.reason, 403);
+
   const parsed = bodySchema.safeParse(await request.json());
   if (!parsed.success) {
     let msg = "Invalid input";

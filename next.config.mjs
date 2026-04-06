@@ -7,6 +7,20 @@ const isProduction = process.env.NODE_ENV === "production";
 const nextConfig = {
   poweredByHeader: false,
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data: https:",
+      "style-src 'self' 'unsafe-inline' https:",
+      "script-src 'self' 'unsafe-inline' https:",
+      "connect-src 'self' https: wss:",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     const securityHeaders = [
       {
         key: "Referrer-Policy",
@@ -32,6 +46,14 @@ const nextConfig = {
         key: "Cross-Origin-Opener-Policy",
         value: "same-origin",
       },
+      {
+        key: "Cross-Origin-Resource-Policy",
+        value: "same-origin",
+      },
+      {
+        key: "Content-Security-Policy",
+        value: csp,
+      },
     ];
     if (isProduction) {
       securityHeaders.push({
@@ -44,6 +66,22 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        source: "/",
+        headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }],
+      },
+      {
+        source: "/login",
+        headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }],
+      },
+      {
+        source: "/register",
+        headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }],
+      },
+      {
+        source: "/privacy",
+        headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }],
       },
       {
         source: "/downloads/fleetshare.apk",
