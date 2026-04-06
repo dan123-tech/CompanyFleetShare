@@ -17,5 +17,9 @@
 # Container listens on 443; host publishes it as :8443 (avoids reserved Windows :80).
 :443 {
 	tls /certs/cert.pem /certs/key.pem
+	header {
+		-Server
+		-X-Powered-By
+	}
 	reverse_proxy app:3100
 }
