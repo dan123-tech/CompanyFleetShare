@@ -120,6 +120,19 @@ export async function apiRegister(email, password, name) {
   return data;
 }
 
+/** Change password for the current session; clears mustChangePassword when applicable. */
+export async function apiChangePassword(currentPassword, newPassword) {
+  const res = await fetch(
+    "/api/users/me/password",
+    getOpts("PATCH", { currentPassword, newPassword })
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof data?.error === "string" ? data.error : "Failed to change password");
+  }
+  return data;
+}
+
 export async function apiSession() {
   const res = await fetch("/api/auth/session", getOpts("GET"));
   if (res.status === 401) {
