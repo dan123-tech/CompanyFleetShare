@@ -55,7 +55,7 @@ export default function HomePageClient() {
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-5 py-3 sm:py-3.5 flex flex-wrap items-center justify-between gap-y-3 gap-x-3">
           <Link href="/" className="flex items-center min-w-0 shrink-0 hover:opacity-90 transition-opacity">
-            <FleetShareBrandBlock tone="dark" size="nav" priority showSubtitle={false} className="max-w-[min(300px,82vw)]" />
+            <FleetShareBrandBlock tone="dark" size="nav" priority className="max-w-[min(300px,82vw)]" />
           </Link>
           <div className="flex flex-wrap items-end justify-end gap-3 sm:gap-4 w-full sm:w-auto">
             <LanguageCurrencySwitcher variant="landing" showCurrency={false} />

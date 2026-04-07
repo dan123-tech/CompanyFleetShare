@@ -9,24 +9,22 @@ const MARK_SRC = {
 
 /** Visual scale presets — real text for tagline (readable); avoids tiny SVG text. */
 const SIZES = {
-  sm: { img: 60, word: "text-base", tag: "text-xs", sub: "text-xs", gap: "gap-3", mtTag: "mt-1.5", mtSub: "mt-2" },
+  sm: { img: 60, word: "text-base", tag: "text-xs", gap: "gap-3", mtTag: "mt-1.5" },
   /** Intro / header: slightly smaller than `md`, text unchanged from user preference */
-  nav: { img: 68, word: "text-lg", tag: "text-xs", sub: "text-xs", gap: "gap-3", mtTag: "mt-1.5", mtSub: "mt-2" },
-  md: { img: 76, word: "text-xl", tag: "text-xs", sub: "text-xs", gap: "gap-4", mtTag: "mt-2", mtSub: "mt-2.5" },
-  lg: { img: 92, word: "text-2xl", tag: "text-sm", sub: "text-sm", gap: "gap-4", mtTag: "mt-2.5", mtSub: "mt-3" },
-  xl: { img: 108, word: "text-3xl", tag: "text-sm", sub: "text-sm", gap: "gap-4", mtTag: "mt-3", mtSub: "mt-3" },
+  nav: { img: 68, word: "text-lg", tag: "text-xs", gap: "gap-3", mtTag: "mt-1.5" },
+  md: { img: 76, word: "text-xl", tag: "text-xs", gap: "gap-4", mtTag: "mt-2" },
+  lg: { img: 92, word: "text-2xl", tag: "text-sm", gap: "gap-4", mtTag: "mt-2.5" },
+  xl: { img: 108, word: "text-3xl", tag: "text-sm", gap: "gap-4", mtTag: "mt-3" },
 };
 
 /**
  * @param {"dark"|"light"} tone
  * @param {"sm"|"nav"|"md"|"lg"|"xl"} size
- * @param {boolean} [showSubtitle]
  * @param {boolean} [priority] — fetchPriority high for LCP (login hero)
  */
 export default function FleetShareBrandBlock({
   tone = "dark",
   size = "md",
-  showSubtitle = true,
   priority = false,
   className = "",
 }) {
@@ -58,13 +56,6 @@ export default function FleetShareBrandBlock({
         >
           {t("sidebar.logoTagline")}
         </p>
-        {showSubtitle && (
-          <p
-            className={`${s.sub} leading-snug ${dark ? "text-white/[0.5]" : "text-slate-500"} ${s.mtSub}`}
-          >
-            {t("sidebar.platformSubtitle")}
-          </p>
-        )}
       </div>
     </div>
   );
