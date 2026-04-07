@@ -43,6 +43,7 @@ export const metadata = {
   manifest: "/site.webmanifest",
   icons: {
     icon: [
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
       { url: "/icon.png", sizes: "192x192", type: "image/png" },
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -70,6 +71,14 @@ export const viewport = { width: "device-width", initialScale: 1, maximumScale: 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* Google Search favicon: ≥48×48 PNG, stable URL; list before ICO/SVG. */}
+        <link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon.png" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
+      </head>
       <body className={`${inter.variable} ${geistMono.variable} antialiased font-sans`}>
         <I18nProvider>
           <DatabaseOrchestratorProvider>
