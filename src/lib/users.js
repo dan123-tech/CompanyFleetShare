@@ -277,6 +277,47 @@ export async function getUserById(userId) {
       drivingLicenceUrl: true,
       mfaEnabled: true,
       mustChangePassword: true,
+      emailBookingNotifications: true,
+      calendarFeedToken: true,
     },
+  });
+}
+
+/** Ensure user has a secret token for ICS subscription URL. */
+export async function ensureCalendarFeedToken(userId) {
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { calendarFeedToken: true },
+  });
+  if (u?.calendarFeedToken) return u.calendarFeedToken;
+  const token = randomBytes(32).toString("hex");
+  await prisma.user.update({ where: { id: userId }, data: { calendarFeedToken: token } });
+  return token;
+}
+
+/** Invalidate old subscription URLs (new token). */
+export async function rotateCalendarFeedToken(userId) {
+  const token = randomBytes(32).toString("hex");
+  await prisma.user.update({ where: { id: userId }, data: { calendarFeedToken: token } });
+  return token;
+}
+
+export async function clearCalendarFeedToken(userId) {
+  await prisma.user.update({ where: { id: userId }, data: { calendarFeedToken: null } });
+}
+
+export async function findUserByCalendarFeedToken(token) {
+  if (!token || typeof token !== "string") return null;
+  return prisma.user.findUnique({
+    where: { calendarFeedToken: token },
+    select: { id: true, email: true, name: true },
+  });
+}
+
+export async function updateUserEmailBookingNotifications(userId, enabled) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { emailBookingNotifications: Boolean(enabled) },
+    select: { emailBookingNotifications: true },
   });
 }

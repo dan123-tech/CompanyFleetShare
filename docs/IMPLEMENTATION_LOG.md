@@ -125,7 +125,29 @@ After code changes, **redeploy** production before re-running external scans.
 
 ---
 
-## 5. Related source files (quick index)
+## 5. Maintenance log, calendar feed, and booking emails
+
+### 5.1 Maintenance history (`MaintenanceEvent`)
+
+- **Model:** `MaintenanceEvent` — `companyId`, `carId`, `performedAt`, optional `mileageKm`, `serviceType`, `cost`, `notes`.
+- **API:** `GET/POST /api/maintenance`, `DELETE /api/maintenance/[id]` (admin).
+- **UI:** Admin sidebar → **Maintenance log** — add records and list/delete.
+
+### 5.2 ICS subscription feed (all reservations for a user)
+
+- **Secret URL:** `GET /api/calendar/feed?token=…` — token is **per-user** (`User.calendarFeedToken`).
+- **Endpoints:** `GET/POST/DELETE /api/users/me/calendar-feed` — show URL, rotate token, disable feed.
+- **UI:** Dashboard → **Security** — booking emails toggle + calendar subscription controls.
+
+### 5.3 Email notifications (beyond MFA)
+
+- **Preference:** `User.emailBookingNotifications` (default **true**). When **off**, the app skips non-MFA transactional emails for **booking** events (confirmation was already implemented; extended here).
+- **Emails:** confirmation (existing), **cancel**, **extend**, **km-exceeded decision** (approve/reject).
+- **Requires:** `RESEND_API_KEY` and `EMAIL_FROM` (same as other emails).
+
+---
+
+## 6. Related source files (quick index)
 
 | Area | Files |
 |------|--------|
@@ -139,6 +161,7 @@ After code changes, **redeploy** production before re-running external scans.
 | Installers | `public/downloads/fleetshare-full-server-install.*`, `fleetshare-full-server-commands.txt` |
 | Caddy TLS path | `deploy/Caddyfile`, `docker-compose.yml` |
 | Security disclosure | `public/.well-known/security.txt`, `public/_headers` |
+| Maintenance + calendar + booking prefs | `src/lib/maintenance.js`, `src/app/api/maintenance/**`, `src/app/api/calendar/feed/route.js`, `src/app/api/users/me/notifications/route.js`, `src/app/api/users/me/calendar-feed/route.js`, `src/lib/email.js` |
 
 ---
 

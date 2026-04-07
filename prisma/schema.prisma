@@ -83,6 +83,10 @@ model User {
   mfaOtpHash           String?
   mfaOtpExpiresAt      DateTime?
   mfaOtpAttempts       Int                  @default(0)
+  /** When false, skip non-MFA booking emails (confirm/cancel/extend/km decision). Default true. */
+  emailBookingNotifications Boolean         @default(true)
+  /** Secret token for GET /api/calendar/feed.ics?token=… (subscribe in Outlook/Google). */
+  calendarFeedToken    String?              @unique
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -117,6 +121,7 @@ model Company {
   members      CompanyMember[]
   invites      Invite[]
   cars         Car[]
+  maintenanceEvents MaintenanceEvent[]
 }
 
 // ---------------------------------------------------------------------------
@@ -183,9 +188,33 @@ model Car {
 
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  maintenanceEvents MaintenanceEvent[]
 
   @@index([companyId])
   @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// MaintenanceEvent – service history per vehicle (admin-recorded).
+// ---------------------------------------------------------------------------
+
+model MaintenanceEvent {
+  id          String   @id @default(cuid())
+  companyId   String
+  carId       String
+  performedAt DateTime
+  mileageKm   Int?
+  serviceType String   @db.VarChar(120)
+  cost        Float?
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  car     Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, performedAt(sort: Desc)])
+  @@index([carId])
 }
 
 // ---------------------------------------------------------------------------

@@ -133,6 +133,56 @@ export async function apiChangePassword(currentPassword, newPassword) {
   return data;
 }
 
+export async function apiUserEmailNotifications(enabled) {
+  const res = await fetch("/api/users/me/notifications", getOpts("PATCH", { emailBookingNotifications: enabled }));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to update notification settings");
+  return data;
+}
+
+export async function apiUserCalendarFeedUrl() {
+  const res = await fetch("/api/users/me/calendar-feed", getOpts("GET"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to load calendar feed URL");
+  return data;
+}
+
+export async function apiUserCalendarFeedRotate() {
+  const res = await fetch("/api/users/me/calendar-feed", getOpts("POST"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to rotate calendar token");
+  return data;
+}
+
+export async function apiUserCalendarFeedDisable() {
+  const res = await fetch("/api/users/me/calendar-feed", getOpts("DELETE"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to disable calendar feed");
+  return data;
+}
+
+export async function apiMaintenanceList(carId) {
+  const q = carId ? `?carId=${encodeURIComponent(carId)}` : "";
+  const res = await fetch(`/api/maintenance${q}`, getOpts("GET"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to load maintenance");
+  return data;
+}
+
+export async function apiMaintenanceCreate(payload) {
+  const res = await fetch("/api/maintenance", getOpts("POST", payload));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to add maintenance");
+  return data;
+}
+
+export async function apiMaintenanceDelete(id) {
+  const res = await fetch(`/api/maintenance/${encodeURIComponent(id)}`, getOpts("DELETE"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to delete");
+  return data;
+}
+
 export async function apiSession() {
   const res = await fetch("/api/auth/session", getOpts("GET"));
   if (res.status === 401) {

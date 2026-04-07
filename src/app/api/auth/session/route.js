@@ -32,6 +32,8 @@ export async function GET() {
     drivingLicenceUrl: drivingLicenceUrlForApi(userRow?.drivingLicenceUrl, session.userId),
     mfaEnabled: Boolean(userRow?.mfaEnabled),
     mustChangePassword: Boolean(userRow?.mustChangePassword),
+    emailBookingNotifications: userRow?.emailBookingNotifications !== false,
+    hasCalendarFeed: Boolean(userRow?.calendarFeedToken),
   };
   const webExtra =
     normalizeClientType(session.client) === "web" && session.sid ? { webSessionId: session.sid } : {};

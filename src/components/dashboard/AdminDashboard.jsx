@@ -13,6 +13,7 @@ import {
   FileScan,
   Plus,
   ShieldCheck,
+  Wrench,
 } from "lucide-react";
 import { Sidebar, NavItem, NavSection, NavLabel } from "./Sidebar";
 import FleetBookingCalendar from "./FleetBookingCalendar";
@@ -38,6 +39,9 @@ import {
   apiRefreshReservationCodes,
   apiVerifyPickupCode,
   apiDataSourceConfigGet,
+  apiMaintenanceList,
+  apiMaintenanceCreate,
+  apiMaintenanceDelete,
 } from "@/lib/api";
 import DataSourceNotConfiguredEmptyState from "./DataSourceNotConfiguredEmptyState";
 import AuditLogsSection from "./AuditLogsSection";
@@ -58,6 +62,7 @@ const ADMIN_PAGE_META_KEYS = {
   history: "history",
   aiVerification: "aiVerification",
   auditLogs: "auditLogs",
+  maintenance: "maintenance",
 };
 
 function needsService(car) {
@@ -206,6 +211,27 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   const [usersFilterDl, setUsersFilterDl] = useState("");
   const [dataSourceConfig, setDataSourceConfig] = useState(null);
   const [dataSourceNotConfigured, setDataSourceNotConfigured] = useState({ users: false, cars: false, reservations: false });
+  const [maintenanceEvents, setMaintenanceEvents] = useState([]);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [maintCarId, setMaintCarId] = useState("");
+  const [maintPerformedAt, setMaintPerformedAt] = useState("");
+  const [maintMileageKm, setMaintMileageKm] = useState("");
+  const [maintServiceType, setMaintServiceType] = useState("");
+  const [maintCost, setMaintCost] = useState("");
+  const [maintNotes, setMaintNotes] = useState("");
+  const [maintSaving, setMaintSaving] = useState(false);
+
+  async function loadMaintenance() {
+    setMaintenanceLoading(true);
+    try {
+      const list = await apiMaintenanceList();
+      setMaintenanceEvents(Array.isArray(list) ? list : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load maintenance");
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -253,6 +279,10 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
     window.addEventListener("dataSourceConfigSaved", handler);
     return () => window.removeEventListener("dataSourceConfigSaved", handler);
   }, []);
+
+  useEffect(() => {
+    if (section === "maintenance") loadMaintenance();
+  }, [section]);
 
   function formatDate(d) {
     if (!d) return "—";
@@ -556,6 +586,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
         items: [
           { id: "cars", label: t("nav.items.manageCars"), icon: <Car className={ICON.s} aria-hidden /> },
           { id: "fleetCalendar", label: t("nav.items.fleetCalendar"), icon: <CalendarDays className={ICON.s} aria-hidden /> },
+          { id: "maintenance", label: t("nav.items.maintenance"), icon: <Wrench className={ICON.s} aria-hidden /> },
           { id: "history", label: t("nav.items.history"), icon: <History className={ICON.s} aria-hidden /> },
           { id: "verifyCode", label: t("nav.items.verifyCode"), icon: <KeyRound className={ICON.s} aria-hidden /> },
         ],
@@ -1751,6 +1782,192 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
           </section>
           );
         })()}
+
+        {section === "maintenance" && (
+          <section className="w-full min-w-0 space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 max-w-3xl">
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">Add service record</h3>
+              <form
+                className="grid gap-3 sm:grid-cols-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!maintCarId || !maintServiceType.trim()) {
+                    setError("Select a car and enter service type.");
+                    return;
+                  }
+                  setMaintSaving(true);
+                  setError("");
+                  try {
+                    const performedAt = maintPerformedAt
+                      ? new Date(maintPerformedAt).toISOString()
+                      : new Date().toISOString();
+                    const mileageKm =
+                      maintMileageKm.trim() === "" ? null : parseInt(maintMileageKm, 10);
+                    const cost =
+                      maintCost.trim() === "" ? null : parseFloat(String(maintCost).replace(",", "."));
+                    await apiMaintenanceCreate({
+                      carId: maintCarId,
+                      performedAt,
+                      mileageKm: mileageKm != null && !Number.isNaN(mileageKm) ? mileageKm : null,
+                      serviceType: maintServiceType.trim(),
+                      cost: cost != null && !Number.isNaN(cost) ? cost : null,
+                      notes: maintNotes.trim() || null,
+                    });
+                    setMaintServiceType("");
+                    setMaintMileageKm("");
+                    setMaintCost("");
+                    setMaintNotes("");
+                    await loadMaintenance();
+                    await load();
+                  } catch (err) {
+                    setError(err.message || "Failed to save");
+                  } finally {
+                    setMaintSaving(false);
+                  }
+                }}
+              >
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Vehicle
+                  <select
+                    value={maintCarId}
+                    onChange={(e) => setMaintCarId(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    required
+                  >
+                    <option value="">—</option>
+                    {cars.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.brand} {c.registrationNumber}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Date & time
+                  <input
+                    type="datetime-local"
+                    value={maintPerformedAt}
+                    onChange={(e) => setMaintPerformedAt(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                  />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Odometer (km)
+                  <input
+                    type="number"
+                    min={0}
+                    value={maintMileageKm}
+                    onChange={(e) => setMaintMileageKm(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="Optional"
+                  />
+                </label>
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Service type
+                  <input
+                    type="text"
+                    value={maintServiceType}
+                    onChange={(e) => setMaintServiceType(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="e.g. Oil change, brakes"
+                    required
+                  />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Cost (optional)
+                  <input
+                    type="text"
+                    value={maintCost}
+                    onChange={(e) => setMaintCost(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="0"
+                  />
+                </label>
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Notes
+                  <textarea
+                    value={maintNotes}
+                    onChange={(e) => setMaintNotes(e.target.value)}
+                    rows={2}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="Optional"
+                  />
+                </label>
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={maintSaving}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
+                  >
+                    {maintSaving ? "Saving…" : "Add record"}
+                  </button>
+                </div>
+              </form>
+            </div>
+            {maintenanceLoading ? (
+              <p className="text-slate-500">Loading…</p>
+            ) : (
+              <div className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden overflow-x-auto">
+                <table className="w-full min-w-[720px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-left">
+                      <th className="py-3 px-4 font-semibold text-slate-700">Date</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Vehicle</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Service</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Km</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Cost</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Notes</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maintenanceEvents.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 px-4 text-center text-slate-500 text-sm">
+                          No maintenance records yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      maintenanceEvents.map((ev) => (
+                        <tr key={ev.id} className="border-t border-slate-100 hover:bg-slate-50/80">
+                          <td className="py-3 px-4 text-sm text-slate-800">{formatDate(ev.performedAt)}</td>
+                          <td className="py-3 px-4 text-sm">
+                            {ev.car?.brand} {ev.car?.registrationNumber}
+                          </td>
+                          <td className="py-3 px-4 text-sm">{ev.serviceType}</td>
+                          <td className="py-3 px-4 text-sm">{ev.mileageKm ?? "—"}</td>
+                          <td className="py-3 px-4 text-sm">
+                            {ev.cost != null ? formatNumber(ev.cost, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "—"}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-slate-600 max-w-[200px] truncate" title={ev.notes || ""}>
+                            {ev.notes || "—"}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!confirm("Delete this maintenance record?")) return;
+                                try {
+                                  await apiMaintenanceDelete(ev.id);
+                                  await loadMaintenance();
+                                } catch (err) {
+                                  setError(err.message || "Delete failed");
+                                }
+                              }}
+                              className="text-xs font-semibold text-red-600 hover:underline"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
 
         {section === "auditLogs" && (
           <section className="w-full min-w-0">

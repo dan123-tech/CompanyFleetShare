@@ -10,7 +10,7 @@ import { getProvider, getLayerTable, getStoredCredentials, LAYERS, PROVIDERS } f
 import { listSqlServerReservations } from "@/lib/connectors/sql-server-reservations";
 import { requireCompany, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
-import { sendReservationConfirmationEmail } from "@/lib/email";
+import { sendReservationConfirmationEmail, shouldSendBookingEmail } from "@/lib/email";
 
 const postSchema = z.object({
   carId: z.string().min(1),
@@ -179,7 +179,7 @@ export async function POST(request) {
         instant: isInstant,
       },
     });
-    if (currentUser?.email) {
+    if (shouldSendBookingEmail(currentUser)) {
       try {
         const sent = await sendReservationConfirmationEmail({
           to: currentUser.email,

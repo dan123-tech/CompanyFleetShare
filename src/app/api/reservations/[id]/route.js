@@ -11,6 +11,23 @@ import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { prisma } from "@/lib/db";
 import { requireCompany, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
+import { getUserById } from "@/lib/users";
+import {
+  shouldSendBookingEmail,
+  sendReservationCancelledEmail,
+  sendReservationExtendedEmail,
+  sendKmExceededDecisionEmail,
+} from "@/lib/email";
+
+async function tryBookingEmailToUser(userId, send) {
+  const u = await getUserById(userId);
+  if (!shouldSendBookingEmail(u)) return;
+  try {
+    await send(u);
+  } catch (e) {
+    console.error("[reservations] booking notification email:", e);
+  }
+}
 
 const patchSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("cancel") }),
@@ -123,6 +140,13 @@ export async function PATCH(request, { params }) {
         cancelledByAdmin: out.session.role === "ADMIN" && reservation.userId !== out.session.userId,
       },
     });
+    await tryBookingEmailToUser(reservation.userId, (u) =>
+      sendReservationCancelledEmail({
+        to: u.email,
+        name: u.name,
+        reservation,
+      })
+    );
     return jsonResponse({ ok: true, status: "CANCELLED" });
   }
 
@@ -196,6 +220,15 @@ export async function PATCH(request, { params }) {
         observations: observations ?? null,
       },
     });
+    const forEmail = await getReservationById(id);
+    await tryBookingEmailToUser(reservation.userId, (u) =>
+      sendKmExceededDecisionEmail({
+        to: u.email,
+        name: u.name,
+        reservation: forEmail || { ...reservation, ...updated },
+        decision: status,
+      })
+    );
     return jsonResponse({ ok: true, releasedExceededStatus: updated.releasedExceededStatus });
   }
 
@@ -216,6 +249,14 @@ export async function PATCH(request, { params }) {
         newEndDate: newEnd,
       },
     });
+    const full = await getReservationById(id);
+    await tryBookingEmailToUser(reservation.userId, (u) =>
+      sendReservationExtendedEmail({
+        to: u.email,
+        name: u.name,
+        reservation: full || updated,
+      })
+    );
     return jsonResponse({
       id: updated.id,
       endDate: updated.endDate,

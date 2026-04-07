@@ -17,6 +17,10 @@ import {
   apiUploadDrivingLicence,
   apiDeleteDrivingLicence,
   apiUserMfaUpdate,
+  apiUserEmailNotifications,
+  apiUserCalendarFeedUrl,
+  apiUserCalendarFeedRotate,
+  apiUserCalendarFeedDisable,
 } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nProvider";
 import LanguageCurrencySwitcher from "@/components/LanguageCurrencySwitcher";
@@ -104,6 +108,10 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [mfaPassword, setMfaPassword] = useState("");
   const [mfaSaving, setMfaSaving] = useState(false);
   const [mfaNotice, setMfaNotice] = useState(null);
+  const [emailNotifSaving, setEmailNotifSaving] = useState(false);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarUrl, setCalendarUrl] = useState("");
+  const [calendarMsg, setCalendarMsg] = useState(null);
   const dlStatus = user?.drivingLicenceStatus ?? null;
   const canReserve = dlStatus === "APPROVED";
 
@@ -647,6 +655,125 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
               {mfaNotice?.type === "success" && (
                 <p className="mt-4 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">{mfaNotice.text}</p>
               )}
+
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 rounded border-slate-300"
+                    checked={user?.emailBookingNotifications !== false}
+                    disabled={emailNotifSaving}
+                    onChange={async (e) => {
+                      setEmailNotifSaving(true);
+                      setCalendarMsg(null);
+                      try {
+                        await apiUserEmailNotifications(e.target.checked);
+                        await onUserUpdated?.();
+                      } catch (err) {
+                        setCalendarMsg({ type: "err", text: err.message || "Failed to save" });
+                      } finally {
+                        setEmailNotifSaving(false);
+                      }
+                    }}
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-800">{t("userSecurityForm.bookingEmailsLabel")}</span>
+                    <span className="block text-xs text-slate-500 mt-0.5">{t("userSecurityForm.bookingEmailsHint")}</span>
+                  </span>
+                </label>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-800 mb-1">{t("userSecurityForm.calendarFeedTitle")}</h3>
+                <p className="text-xs text-slate-500 mb-3">{t("userSecurityForm.calendarFeedIntro")}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={calendarLoading}
+                    onClick={async () => {
+                      setCalendarLoading(true);
+                      setCalendarMsg(null);
+                      try {
+                        const d = await apiUserCalendarFeedUrl();
+                        setCalendarUrl(d.feedUrl || "");
+                      } catch (err) {
+                        setCalendarMsg({ type: "err", text: err.message || "Failed" });
+                      } finally {
+                        setCalendarLoading(false);
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200/80 disabled:opacity-50"
+                  >
+                    {calendarLoading ? "…" : t("userSecurityForm.calendarFeedShow")}
+                  </button>
+                  {calendarUrl && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(calendarUrl);
+                            setCalendarMsg({ type: "ok", text: t("userSecurityForm.calendarFeedCopied") });
+                          } catch {
+                            setCalendarMsg({ type: "err", text: "Copy failed" });
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
+                      >
+                        {t("userSecurityForm.calendarFeedCopy")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setCalendarLoading(true);
+                          setCalendarMsg(null);
+                          try {
+                            const d = await apiUserCalendarFeedRotate();
+                            setCalendarUrl(d.feedUrl || "");
+                            await onUserUpdated?.();
+                          } catch (err) {
+                            setCalendarMsg({ type: "err", text: err.message || "Failed" });
+                          } finally {
+                            setCalendarLoading(false);
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                      >
+                        {t("userSecurityForm.calendarFeedRotate")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm("Disable calendar subscription? Apps using the old link will stop updating.")) return;
+                          setCalendarLoading(true);
+                          setCalendarMsg(null);
+                          try {
+                            await apiUserCalendarFeedDisable();
+                            setCalendarUrl("");
+                            await onUserUpdated?.();
+                          } catch (err) {
+                            setCalendarMsg({ type: "err", text: err.message || "Failed" });
+                          } finally {
+                            setCalendarLoading(false);
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl border border-red-200 text-red-700 hover:bg-red-50"
+                      >
+                        {t("userSecurityForm.calendarFeedDisable")}
+                      </button>
+                    </>
+                  )}
+                </div>
+                {calendarUrl && (
+                  <p className="mt-3 text-xs text-slate-600 break-all font-mono bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">{calendarUrl}</p>
+                )}
+                {calendarMsg?.type === "ok" && (
+                  <p className="mt-2 text-sm text-emerald-700">{calendarMsg.text}</p>
+                )}
+                {calendarMsg?.type === "err" && (
+                  <p className="mt-2 text-sm text-red-600">{calendarMsg.text}</p>
+                )}
+              </div>
             </div>
           </section>
         )}

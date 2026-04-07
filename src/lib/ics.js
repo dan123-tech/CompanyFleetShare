@@ -78,3 +78,35 @@ export function calendarHostFromEnv() {
     return "localhost";
   }
 }
+
+/**
+ * Multi-event calendar feed (subscribe in Outlook / Google Calendar).
+ * @param {Array<{ uid: string, startDate: Date|string, endDate: Date|string, summary: string, description?: string }>} events
+ */
+export function buildReservationFeedIcs(events) {
+  const host = calendarHostFromEnv();
+  const dtStamp = formatUtc(new Date());
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//FleetShare//Reservation feed//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+  ];
+  for (const ev of events) {
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${escapeIcsText(ev.uid)}@${escapeIcsText(host)}`,
+      `DTSTAMP:${dtStamp}`,
+      `DTSTART:${formatUtc(ev.startDate)}`,
+      `DTEND:${formatUtc(ev.endDate)}`,
+      `SUMMARY:${escapeIcsText(ev.summary)}`
+    );
+    if (ev.description) {
+      lines.push(`DESCRIPTION:${escapeIcsText(ev.description)}`);
+    }
+    lines.push("END:VEVENT");
+  }
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n") + "\r\n";
+}

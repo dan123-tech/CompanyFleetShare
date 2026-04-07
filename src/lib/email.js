@@ -308,6 +308,11 @@ function formatReservationWhen(iso) {
   }
 }
 
+/** Respect user preference for non-MFA booking emails (confirm, cancel, extend, km decision). */
+export function shouldSendBookingEmail(userRow) {
+  return Boolean(userRow?.email) && userRow.emailBookingNotifications !== false;
+}
+
 /**
  * Sent when a user creates a reservation (local DB).
  */
@@ -364,6 +369,143 @@ export async function sendReservationConfirmationEmail({ to, name, reservation }
   });
 
   return sendEmail({ to, subject: "Reservation confirmed — FleetShare", html, text });
+}
+
+/**
+ * Reservation cancelled (user or admin).
+ */
+export async function sendReservationCancelledEmail({ to, name, reservation }) {
+  const greeting = name?.trim() ? `Hi ${name.trim()},` : "Hi,";
+  const safeName = name?.trim() ? escapeEmailText(name.trim()) : "";
+  const car = reservation?.car;
+  const carLabel = car
+    ? [car.brand, car.model, car.registrationNumber].filter(Boolean).join(" ").trim() || reservation?.carId
+    : "—";
+  const start = formatReservationWhen(reservation?.startDate);
+  const end = formatReservationWhen(reservation?.endDate);
+
+  const text = [
+    greeting,
+    "",
+    "Your reservation was cancelled.",
+    "",
+    `Vehicle: ${carLabel}`,
+    `Was scheduled: ${start} – ${end}`,
+    brandedTextFooter(),
+  ].join("\n");
+
+  const innerHtml = `
+    <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#0f172a;">${safeName ? `Hi ${safeName},` : "Hi,"}</p>
+    <p style="margin:0 0 16px;">Your FleetShare reservation was <strong>cancelled</strong>.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:15px;">
+      <tr><td style="padding:10px 12px 10px 0;color:#64748b;">Vehicle</td><td style="padding:10px 0;"><strong>${escapeEmailText(carLabel)}</strong></td></tr>
+      <tr><td style="padding:10px 12px 10px 0;color:#64748b;border-top:1px solid #e2e8f0;">Was scheduled</td><td style="padding:10px 0;border-top:1px solid #e2e8f0;">${escapeEmailText(start)} – ${escapeEmailText(end)}</td></tr>
+    </table>
+  `.trim();
+
+  const html = wrapBrandedEmailHtml({
+    innerHtml,
+    preheader: `Reservation cancelled — ${carLabel}`,
+  });
+
+  return sendEmail({ to, subject: "Reservation cancelled — FleetShare", html, text });
+}
+
+/**
+ * Reservation end time extended.
+ */
+export async function sendReservationExtendedEmail({ to, name, reservation }) {
+  const greeting = name?.trim() ? `Hi ${name.trim()},` : "Hi,";
+  const safeName = name?.trim() ? escapeEmailText(name.trim()) : "";
+  const car = reservation?.car;
+  const carLabel = car
+    ? [car.brand, car.model, car.registrationNumber].filter(Boolean).join(" ").trim() || reservation?.carId
+    : "—";
+  const end = formatReservationWhen(reservation?.endDate);
+  const start = formatReservationWhen(reservation?.startDate);
+
+  const text = [
+    greeting,
+    "",
+    "Your reservation was updated — new end time:",
+    end,
+    "",
+    `Vehicle: ${carLabel}`,
+    `Start (unchanged): ${start}`,
+    brandedTextFooter(),
+  ].join("\n");
+
+  const innerHtml = `
+    <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#0f172a;">${safeName ? `Hi ${safeName},` : "Hi,"}</p>
+    <p style="margin:0 0 16px;">Your booking end time was <strong>updated</strong>.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:15px;">
+      <tr><td style="padding:10px 12px 10px 0;color:#64748b;">Vehicle</td><td style="padding:10px 0;"><strong>${escapeEmailText(carLabel)}</strong></td></tr>
+      <tr><td style="padding:10px 12px 10px 0;color:#64748b;border-top:1px solid #e2e8f0;">New end</td><td style="padding:10px 0;border-top:1px solid #e2e8f0;">${escapeEmailText(end)}</td></tr>
+      <tr><td style="padding:10px 12px 10px 0;color:#64748b;border-top:1px solid #e2e8f0;">Start</td><td style="padding:10px 0;border-top:1px solid #e2e8f0;">${escapeEmailText(start)}</td></tr>
+    </table>
+  `.trim();
+
+  const html = wrapBrandedEmailHtml({
+    innerHtml,
+    preheader: `Reservation updated — ${carLabel}`,
+  });
+
+  return sendEmail({ to, subject: "Reservation updated — FleetShare", html, text });
+}
+
+/**
+ * Admin approved or rejected km-exceeded request after return.
+ */
+export async function sendKmExceededDecisionEmail({ to, name, reservation, decision }) {
+  const greeting = name?.trim() ? `Hi ${name.trim()},` : "Hi,";
+  const safeName = name?.trim() ? escapeEmailText(name.trim()) : "";
+  const car = reservation?.car;
+  const carLabel = car
+    ? [car.brand, car.model, car.registrationNumber].filter(Boolean).join(" ").trim() || reservation?.carId
+    : "—";
+  const approved = decision === "APPROVED";
+  const comment = reservation?.releasedExceededAdminComment?.trim();
+
+  const text = [
+    greeting,
+    "",
+    approved
+      ? "Your administrator approved the extra distance on your completed trip."
+      : "Your administrator did not approve the extra distance on your completed trip.",
+    comment ? `Note: ${comment}` : "",
+    "",
+    `Vehicle: ${carLabel}`,
+    brandedTextFooter(),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const innerHtml = `
+    <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#0f172a;">${safeName ? `Hi ${safeName},` : "Hi,"}</p>
+    <p style="margin:0 0 16px;">${
+      approved
+        ? 'Your administrator <strong style="color:#059669;">approved</strong> the extra distance recorded on your completed trip.'
+        : 'Your administrator <strong style="color:#b91c1c;">did not approve</strong> the extra distance on your completed trip.'
+    }</p>
+    ${
+      comment
+        ? `<div style="margin:0 0 16px;padding:14px 16px;background:#f8fafc;border-radius:10px;border-left:4px solid #0369a1;"><p style="margin:0;font-size:14px;color:#475569;"><strong>Admin note:</strong> ${escapeEmailText(comment)}</p></div>`
+        : ""
+    }
+    <p style="margin:0;font-size:14px;color:#64748b;">Vehicle: <strong>${escapeEmailText(carLabel)}</strong></p>
+  `.trim();
+
+  const html = wrapBrandedEmailHtml({
+    innerHtml,
+    preheader: approved ? "Extra km approved" : "Extra km not approved",
+  });
+
+  return sendEmail({
+    to,
+    subject: approved ? "Trip distance update approved — FleetShare" : "Trip distance update — FleetShare",
+    html,
+    text,
+  });
 }
 
 /**

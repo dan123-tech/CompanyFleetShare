@@ -178,6 +178,7 @@
       "statistics": "Statistici",
       "manageCars": "Gestionare mașini",
       "fleetCalendar": "Calendar flotă",
+      "maintenance": "Jurnal întreținere",
       "reservations": "Rezervări",
       "history": "Istoric",
       "verifyCode": "Verificare cod preluare",
@@ -201,6 +202,7 @@
     "statistics": { "title": "Statistici și rapoarte", "sub": "Analize și defalcare costuri" },
     "cars": { "title": "Gestionare mașini", "sub": "Prezentare flotă" },
     "fleetCalendar": { "title": "Calendar flotă", "sub": "Mașini în timp — rezervări și sloturi libere" },
+    "maintenance": { "title": "Jurnal întreținere", "sub": "Istoric service pe vehicul" },
     "verifyCode": { "title": "Verificare cod preluare", "sub": "Validează codurile de preluare" },
     "users": { "title": "Gestionare utilizatori", "sub": "Roluri și permise de conducere" },
     "invites": { "title": "Invitații", "sub": "Invitații în așteptare și acceptate" },
@@ -467,6 +469,15 @@
     "saving": "Se salvează…",
     "enabledOk": "Codul prin e-mail este activat.",
     "disabledOk": "Codul prin e-mail este dezactivat.",
-    "passwordRequired": "Introdu parola actuală."
+    "passwordRequired": "Introdu parola actuală.",
+    "bookingEmailsLabel": "E-mailuri despre rezervări",
+    "bookingEmailsHint": "Primești confirmări și actualizări la creare, anulare, prelungire sau când un administrator decide asupra km suplimentari.",
+    "calendarFeedTitle": "Abonament calendar",
+    "calendarFeedIntro": "Adaugă acest URL în Outlook sau Google Calendar pentru a sincroniza rezervările FleetShare (link privat — nu îl partaja).",
+    "calendarFeedShow": "Arată link de abonament",
+    "calendarFeedCopy": "Copiază link",
+    "calendarFeedRotate": "Link nou (îl invalidează pe cel vechi)",
+    "calendarFeedDisable": "Dezactivează abonamentul",
+    "calendarFeedCopied": "Link copiat."
   }
 }

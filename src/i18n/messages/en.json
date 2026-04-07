@@ -178,6 +178,7 @@
       "statistics": "Statistics",
       "manageCars": "Manage cars",
       "fleetCalendar": "Fleet calendar",
+      "maintenance": "Maintenance log",
       "reservations": "Reservations",
       "history": "History",
       "verifyCode": "Verify pickup code",
@@ -201,6 +202,7 @@
     "statistics": { "title": "Statistics & reports", "sub": "Analytics and cost breakdown" },
     "cars": { "title": "Manage cars", "sub": "Fleet overview" },
     "fleetCalendar": { "title": "Fleet calendar", "sub": "Cars vs time — see bookings and free slots" },
+    "maintenance": { "title": "Maintenance log", "sub": "Service history per vehicle" },
     "verifyCode": { "title": "Verify pickup code", "sub": "Validate reservation pickup codes" },
     "users": { "title": "Manage users", "sub": "Roles and driving licences" },
     "invites": { "title": "Invites", "sub": "Pending and accepted invitations" },
@@ -467,6 +469,15 @@
     "saving": "Saving…",
     "enabledOk": "Email sign-in code is now on.",
     "disabledOk": "Email sign-in code is now off.",
-    "passwordRequired": "Enter your current password."
+    "passwordRequired": "Enter your current password.",
+    "bookingEmailsLabel": "Booking emails",
+    "bookingEmailsHint": "Receive confirmation and updates when reservations are created, cancelled, extended, or when an admin decides on extra km.",
+    "calendarFeedTitle": "Calendar subscription",
+    "calendarFeedIntro": "Add this URL to Outlook or Google Calendar to sync your upcoming FleetShare bookings (private link — do not share).",
+    "calendarFeedShow": "Show subscription link",
+    "calendarFeedCopy": "Copy link",
+    "calendarFeedRotate": "New link (invalidates old)",
+    "calendarFeedDisable": "Disable subscription",
+    "calendarFeedCopied": "Link copied."
   }
 }
