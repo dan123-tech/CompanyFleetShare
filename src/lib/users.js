@@ -28,12 +28,12 @@ export async function findUserByEmail(email) {
 export async function createUser(data, options) {
   const email = data.email.toLowerCase().trim();
   const mustChangePassword = Boolean(options?.mustChangePassword);
-  return prisma.$transaction(async (tx) => {
+  const user = await prisma.$transaction(async (tx) => {
     const existing = await tx.user.findUnique({ where: { email } });
-    let user = existing;
-    if (!user) {
+    let nextUser = existing;
+    if (!nextUser) {
       const hashed = await hashPassword(data.password);
-      user = await tx.user.create({
+      nextUser = await tx.user.create({
         data: {
           email,
           password: hashed,
@@ -41,9 +41,9 @@ export async function createUser(data, options) {
           ...(mustChangePassword ? { mustChangePassword: true } : {}),
         },
       });
-    } else if (!user.name && data.name?.trim()) {
-      user = await tx.user.update({
-        where: { id: user.id },
+    } else if (!nextUser.name && data.name?.trim()) {
+      nextUser = await tx.user.update({
+        where: { id: nextUser.id },
         data: { name: data.name.trim() },
       });
     }
@@ -51,7 +51,7 @@ export async function createUser(data, options) {
     if (options?.companyId) {
       const membershipInOtherCompany = await tx.companyMember.findFirst({
         where: {
-          userId: user.id,
+          userId: nextUser.id,
           status: "ENROLLED",
           companyId: { not: options.companyId },
         },
@@ -61,36 +61,41 @@ export async function createUser(data, options) {
         throw new Error("This email already belongs to another company.");
       }
       await tx.companyMember.upsert({
-        where: { userId_companyId: { userId: user.id, companyId: options.companyId } },
+        where: { userId_companyId: { userId: nextUser.id, companyId: options.companyId } },
         update: { role: options.role, status: "ENROLLED" },
         create: {
-          userId: user.id,
-          companyId: options.companyId,
-          role: options.role,
-          status: "ENROLLED",
-        },
-      });
-      await ensureTenantSchema(options.companyId);
-      const tenant = await getTenantPrisma(options.companyId);
-      await tenant.user.upsert({
-        where: { id: user.id },
-        update: { email: user.email, name: user.name, password: user.password },
-        create: { id: user.id, email: user.email, name: user.name, password: user.password },
-      });
-      await tenant.companyMember.upsert({
-        where: { userId_companyId: { userId: user.id, companyId: options.companyId } },
-        update: { role: options.role, status: "ENROLLED" },
-        create: {
-          id: `${options.companyId}_${user.id}`,
-          userId: user.id,
+          userId: nextUser.id,
           companyId: options.companyId,
           role: options.role,
           status: "ENROLLED",
         },
       });
     }
-    return user;
+    return nextUser;
   });
+
+  // Keep interactive transaction short; tenant sync runs after commit.
+  if (options?.companyId) {
+    await ensureTenantSchema(options.companyId);
+    const tenant = await getTenantPrisma(options.companyId);
+    await tenant.user.upsert({
+      where: { id: user.id },
+      update: { email: user.email, name: user.name, password: user.password },
+      create: { id: user.id, email: user.email, name: user.name, password: user.password },
+    });
+    await tenant.companyMember.upsert({
+      where: { userId_companyId: { userId: user.id, companyId: options.companyId } },
+      update: { role: options.role, status: "ENROLLED" },
+      create: {
+        id: `${options.companyId}_${user.id}`,
+        userId: user.id,
+        companyId: options.companyId,
+        role: options.role,
+        status: "ENROLLED",
+      },
+    });
+  }
+  return user;
 }
 
 /**

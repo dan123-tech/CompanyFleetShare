@@ -7,6 +7,7 @@ function normalizeBaseUrl(raw) {
 
 const DEFAULT_AI_URL = normalizeBaseUrl(
   process.env.AI_FACE_RECOGNITION_URL ||
+    process.env.FACE_VALIDATOR_URL ||
     process.env.AI_FACE_MATCH_URL ||
     process.env.AI_VERIFICATION_URL ||
     "http://localhost:8080"
@@ -23,10 +24,12 @@ function buildFaceAuthHeaders() {
   const headers = {};
   const auth =
     process.env.AI_FACE_RECOGNITION_AUTHORIZATION ||
+    process.env.FACE_VALIDATOR_AUTHORIZATION ||
     process.env.AI_BACKEND_AUTHORIZATION ||
     "";
   const bypass =
     process.env.AI_FACE_RECOGNITION_BYPASS_TOKEN ||
+    process.env.FACE_VALIDATOR_BYPASS_TOKEN ||
     process.env.AI_BACKEND_BYPASS_TOKEN ||
     "";
   if (auth.trim()) headers.Authorization = auth.trim();
@@ -34,15 +37,28 @@ function buildFaceAuthHeaders() {
   return headers;
 }
 
-function buildCandidatePaths() {
+function buildCandidatePaths(base) {
   const configuredRaw = (
     process.env.AI_FACE_RECOGNITION_VERIFY_PATH ||
+    process.env.FACE_VALIDATOR_ENDPOINT ||
     process.env.AI_FACE_MATCH_PATH ||
     "/verify"
   ).trim();
   const normalizedConfigured = configuredRaw.startsWith("/") ? configuredRaw : `/${configuredRaw}`;
+  const parsedBasePath = (() => {
+    try {
+      const u = new URL(base);
+      const p = (u.pathname || "").replace(/\/+$/, "");
+      return p && p !== "/" ? p : "";
+    } catch {
+      return "";
+    }
+  })();
   // Prefer stable default endpoints first, then custom configured path.
   const candidates = [
+    "",
+    "/",
+    parsedBasePath,
     normalizedConfigured,
     "/verify",
     "/api/verify",
@@ -57,7 +73,7 @@ function buildCandidatePaths() {
     "/compare",
     "/api/compare",
   ];
-  return [...new Set(candidates)];
+  return [...new Set(candidates.filter((p) => p != null && p !== "undefined"))];
 }
 
 function makeImagePart(buffer, mimeType, filename) {
@@ -86,10 +102,10 @@ export async function verifyIdentityFaceMatch(licence, liveScan) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
   try {
-    const paths = buildCandidatePaths();
+    const paths = buildCandidatePaths(base);
 
     for (const p of paths) {
-      const url = `${base}${p}`;
+      const url = p === "" || p === "/" ? base : `${base}${p}`;
       const form = new FormData();
       const licencePart = makeImagePart(licence.imageBuffer, licence.mimeType, licence.filename);
       const liveScanPart = makeImagePart(liveScan.imageBuffer, liveScan.mimeType, liveScan.filename);
