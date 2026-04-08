@@ -48,6 +48,24 @@ function MobileCapturePageInner() {
   }, []);
 
   useEffect(() => {
+    if (!cameraReady || !isMounted || !streamRef.current || !videoRef.current) return;
+    let cancelled = false;
+    const bindStream = async () => {
+      if (cancelled || !videoRef.current || !streamRef.current) return;
+      videoRef.current.srcObject = streamRef.current;
+      try {
+        await videoRef.current.play();
+      } catch {
+        // Ignore transient play timing failures on mobile; stream remains attached.
+      }
+    };
+    bindStream();
+    return () => {
+      cancelled = true;
+    };
+  }, [cameraReady, isMounted]);
+
+  useEffect(() => {
     async function loadSession() {
       if (!token) {
         setError("Missing verification token.");
@@ -100,14 +118,6 @@ function MobileCapturePageInner() {
         });
       }
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-        } catch {
-          // Some mobile browsers delay play() until ready; autoPlay + playsInline still work.
-        }
-      }
       setCameraReady(true);
     } catch (e) {
       const msg = String(e?.message || "");

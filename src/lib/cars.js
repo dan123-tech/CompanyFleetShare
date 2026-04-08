@@ -2,7 +2,58 @@
  * Car domain logic: CRUD and listing by company/status.
  */
 
-import { getTenantPrisma } from "@/lib/tenant-db";
+import { getTenantPrisma, createTempTenantClient } from "@/lib/tenant-db";
+import { prisma as controlPrisma } from "@/lib/db";
+
+async function backfillCarsFromLegacyIfEmpty(companyId) {
+  const legacyUrl = String(process.env.DATABASE_URL || "").trim();
+  if (!legacyUrl) return;
+
+  const cfg = await controlPrisma.companyTenant.findUnique({
+    where: { companyId },
+    select: { databaseUrl: true },
+  });
+  if (!cfg?.databaseUrl) return;
+  if (cfg.databaseUrl === legacyUrl) return;
+
+  const tenant = await getTenantPrisma(companyId);
+  const hasCars = await tenant.car.count({ where: { companyId } });
+  if (hasCars > 0) return;
+
+  const legacy = createTempTenantClient(legacyUrl);
+  try {
+    const legacyCars = await legacy.car.findMany({
+      where: { companyId },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!legacyCars.length) return;
+    await tenant.car.createMany({
+      data: legacyCars.map((c) => ({
+        id: c.id,
+        companyId: c.companyId,
+        brand: c.brand,
+        model: c.model,
+        registrationNumber: c.registrationNumber,
+        km: c.km,
+        status: c.status,
+        fuelType: c.fuelType,
+        averageConsumptionL100km: c.averageConsumptionL100km,
+        averageConsumptionKwh100km: c.averageConsumptionKwh100km,
+        batteryLevel: c.batteryLevel,
+        batteryCapacityKwh: c.batteryCapacityKwh,
+        lastServiceMileage: c.lastServiceMileage,
+        lastServiceYearMonth: c.lastServiceYearMonth,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      })),
+      skipDuplicates: true,
+    });
+  } catch {
+    // Best-effort legacy recovery only; do not fail car listing.
+  } finally {
+    await legacy.$disconnect().catch(() => {});
+  }
+}
 
 /**
  * List cars for a company with optional status filter.
@@ -11,6 +62,7 @@ import { getTenantPrisma } from "@/lib/tenant-db";
  * @returns {Promise<Object[]>} Cars with reservation count
  */
 export async function listCars(companyId, status) {
+  await backfillCarsFromLegacyIfEmpty(companyId);
   const prisma = await getTenantPrisma(companyId);
   return prisma.car.findMany({
     where: { companyId, ...(status ? { status } : {}) },
@@ -26,6 +78,7 @@ export async function listCars(companyId, status) {
  * @returns {Promise<Object|null>}
  */
 export async function getCarById(carId, companyId) {
+  await backfillCarsFromLegacyIfEmpty(companyId);
   const prisma = await getTenantPrisma(companyId);
   return prisma.car.findFirst({
     where: { id: carId, companyId },

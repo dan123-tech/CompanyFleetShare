@@ -163,11 +163,8 @@ export async function ensureNeonTenantDatabase({
     parseRoleFromUrl(existingDatabaseUrl) ||
     process.env.NEON_ROLE_NAME?.trim() ||
     required("NEON_ROLE_NAME");
-  let resolvedBranchId = branchId;
-  if (!resolvedBranchId) {
-    const branch = await getBranchByName(projectId, `tenant-${companyId}`);
-    resolvedBranchId = branch?.id || rootBranchId;
-  }
+  // Always place tenant databases on production/root branch (no per-company Neon branches).
+  const resolvedBranchId = branchId || rootBranchId;
   const resolvedDbName =
     databaseName || parseDatabaseNameFromUrl(existingDatabaseUrl) || normalizeDatabaseName(companyId);
 
@@ -186,49 +183,19 @@ export async function ensureNeonTenantDatabase({
 export async function provisionNeonTenant({ companyId, companyName }) {
   const projectId = required("NEON_PROJECT_ID");
   const rootBranchId = process.env.NEON_ROOT_BRANCH_ID?.trim() || "br-main";
-  const branchName = `tenant-${companyId}`;
   const databaseName = normalizeDatabaseName(companyName || companyId);
   const roleName = required("NEON_ROLE_NAME");
-
-  let branch;
-  let usingSharedRootBranch = false;
-  try {
-    branch = await neonFetchWithRetry(`/projects/${projectId}/branches`, {
-      method: "POST",
-      body: JSON.stringify({
-        branch: {
-          name: branchName,
-          parent_id: rootBranchId,
-        },
-      }),
-    });
-  } catch (e) {
-    const msg = String(e?.message || "");
-    // Idempotency for retries/races: if branch name already exists, reuse it.
-    if (msg.includes("already exists") || msg.includes("Neon API 409")) {
-      const existing = await getBranchByName(projectId, branchName);
-      if (!existing?.id) throw e;
-      branch = { branch: existing };
-    } else if (isBranchesLimitExceededMessage(msg)) {
-      // Fallback mode: when project branch quota is exceeded, keep db-per-company by creating
-      // the tenant database on the configured root branch.
-      usingSharedRootBranch = true;
-      branch = { branch: { id: rootBranchId, name: `root-${rootBranchId}` } };
-    } else {
-      throw e;
-    }
-  }
-
-  await ensureDatabaseOnBranch(projectId, branch.branch.id, databaseName, roleName);
+  const branchId = rootBranchId;
+  await ensureDatabaseOnBranch(projectId, branchId, databaseName, roleName);
 
   const conn = await neonFetchWithRetry(
-    `/projects/${projectId}/connection_uri?database_name=${encodeURIComponent(databaseName)}&role_name=${encodeURIComponent(roleName)}&branch_id=${encodeURIComponent(branch.branch.id)}`
+    `/projects/${projectId}/connection_uri?database_name=${encodeURIComponent(databaseName)}&role_name=${encodeURIComponent(roleName)}&branch_id=${encodeURIComponent(branchId)}`
   );
 
   return {
     provider: "neon",
-    branchId: branch.branch.id,
-    branchName: usingSharedRootBranch ? `shared-${rootBranchId}` : branchName,
+    branchId,
+    branchName: `root-${rootBranchId}`,
     databaseName,
     databaseUrl: conn.uri,
   };

@@ -249,6 +249,18 @@ export async function joinCompanyByCode(userId, joinCode) {
   const company = await findCompanyByJoinCode(joinCode);
   if (!company) return null;
 
+  const enrolledElsewhere = await prisma.companyMember.findFirst({
+    where: {
+      userId,
+      status: "ENROLLED",
+      companyId: { not: company.id },
+    },
+    select: { companyId: true },
+  });
+  if (enrolledElsewhere) {
+    throw new Error("Your account is already enrolled in another company.");
+  }
+
   const existing = await prisma.companyMember.findUnique({
     where: { userId_companyId: { userId, companyId: company.id } },
   });

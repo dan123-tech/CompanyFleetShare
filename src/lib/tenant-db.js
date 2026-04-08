@@ -22,6 +22,10 @@ function createTenantClient(databaseUrl) {
   return new PrismaClient({ datasources: { db: { url: databaseUrl } }, log });
 }
 
+export function createTempTenantClient(databaseUrl) {
+  return createTenantClient(databaseUrl);
+}
+
 function isUsableDatabaseUrl(url) {
   const v = String(url || "").trim();
   if (!v) return false;

@@ -49,6 +49,17 @@ export async function createUser(data, options) {
     }
 
     if (options?.companyId) {
+      const membershipInOtherCompany = await tx.companyMember.findFirst({
+        where: {
+          userId: user.id,
+          status: "ENROLLED",
+          companyId: { not: options.companyId },
+        },
+        select: { companyId: true },
+      });
+      if (membershipInOtherCompany) {
+        throw new Error("This email already belongs to another company.");
+      }
       await tx.companyMember.upsert({
         where: { userId_companyId: { userId: user.id, companyId: options.companyId } },
         update: { role: options.role, status: "ENROLLED" },
@@ -102,6 +113,17 @@ export async function createInvite(companyId, email, role, name) {
     });
     const existing = await tx.user.findUnique({ where: { email: emailNorm } });
     if (existing) {
+      const membershipInOtherCompany = await tx.companyMember.findFirst({
+        where: {
+          userId: existing.id,
+          status: "ENROLLED",
+          companyId: { not: companyId },
+        },
+        select: { companyId: true },
+      });
+      if (membershipInOtherCompany) {
+        throw new Error("This email already belongs to another company.");
+      }
       const existingMember = await tx.companyMember.findUnique({
         where: { userId_companyId: { userId: existing.id, companyId } },
       });
@@ -191,7 +213,19 @@ export async function listInvites(companyId) {
  */
 export async function listCompanyMembers(companyId, status) {
   return prisma.companyMember.findMany({
-    where: { companyId, ...(status ? { status } : {}) },
+    where: {
+      companyId,
+      ...(status ? { status } : {}),
+      // Enforce one-company visibility: hide accidental cross-company memberships.
+      user: {
+        companyMembers: {
+          none: {
+            status: "ENROLLED",
+            companyId: { not: companyId },
+          },
+        },
+      },
+    },
     include: {
       user: {
         select: {
