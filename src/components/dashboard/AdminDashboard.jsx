@@ -858,6 +858,26 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
     }
   }
 
+  async function setAiValidationMode(mode) {
+    setAiConfigSaving(true);
+    setError("");
+    try {
+      const payload =
+        mode === "driving"
+          ? { drivingEnabled: true, faceEnabled: false }
+          : { drivingEnabled: false, faceEnabled: true };
+      const updated = await apiAiValidationConfigPatch(payload);
+      setAiValidationConfig({
+        drivingEnabled: updated.drivingEnabled !== false,
+        faceEnabled: updated.faceEnabled !== false,
+      });
+    } catch (err) {
+      setError(err.message || "Failed to save AI validation settings");
+    } finally {
+      setAiConfigSaving(false);
+    }
+  }
+
   async function handleExceededApproval(reservationId, action) {
     const observations = pendingApprovalObservations[reservationId];
     try {
@@ -2166,19 +2186,20 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
         )}
 
         {section === "aiVerification" && (() => {
-          const aiUsers = users.filter((m) =>
-            m.drivingLicenceStatus != null ||
-            m.identityStatus != null ||
-            m.drivingLicenceVerifiedBy === "AI" ||
-            m.identityVerifiedBy === "AI"
-          );
+          const showDriving = aiValidationConfig.drivingEnabled;
+          const showFace = !aiValidationConfig.drivingEnabled && aiValidationConfig.faceEnabled;
+          const aiUsers = users.filter((m) => {
+            if (showDriving) return m.drivingLicenceStatus != null || m.drivingLicenceVerifiedBy != null;
+            if (showFace) return m.identityStatus != null || m.identityVerifiedBy != null;
+            return false;
+          });
           const aiDrivingApproved = aiUsers.filter((m) => m.drivingLicenceStatus === "APPROVED");
           const aiDrivingRejected = aiUsers.filter((m) => m.drivingLicenceStatus === "REJECTED");
           const aiFaceApproved = aiUsers.filter((m) => m.identityStatus === "VERIFIED");
           const aiFaceRejected = aiUsers.filter((m) => m.identityStatus === "REJECTED");
           return (
           <section className="w-full min-w-0">
-            <div className="mb-8 p-5 sm:p-6 rounded-xl bg-[#1E293B] text-white border border-slate-600/50 shadow-sm">
+            <div className="mb-4 p-5 sm:p-6 rounded-xl bg-[#1E293B] text-white border border-slate-600/50 shadow-sm">
               <div className="flex items-start gap-4">
                 <div
                   className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center border border-cyan-400/25 shadow-inner"
@@ -2190,31 +2211,11 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                   <FileScan className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-100" strokeWidth={1.75} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-bold text-white mb-1">AI Verification</h2>
-                  <p className="text-sm text-slate-300">
-                    Configure AI validators for driving licence and face match. Users still can be reviewed manually.
+                  <h2 className="text-xl font-bold text-cyan-100 mb-1">AI Verification</h2>
+                  <p className="text-sm text-slate-200">
+                    Enable one mode at a time: Driving mode shows only driving-licence requests, Face mode shows only face-recognition requests.
                   </p>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-4 mt-4">
-                <label className="inline-flex items-center gap-2 bg-slate-900/40 border border-slate-600/50 rounded-lg px-3 py-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={aiValidationConfig.drivingEnabled}
-                    disabled={aiConfigSaving}
-                    onChange={(e) => handleAiValidationToggle("drivingEnabled", e.target.checked)}
-                  />
-                  <span>AI Driving Validation</span>
-                </label>
-                <label className="inline-flex items-center gap-2 bg-slate-900/40 border border-slate-600/50 rounded-lg px-3 py-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={aiValidationConfig.faceEnabled}
-                    disabled={aiConfigSaving}
-                    onChange={(e) => handleAiValidationToggle("faceEnabled", e.target.checked)}
-                  />
-                  <span>AI Face Validation</span>
-                </label>
               </div>
               <div className="flex flex-wrap gap-3 mt-3">
                 <span className="px-3 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 text-sm font-semibold">
@@ -2232,9 +2233,42 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 <span className="px-3 py-1 rounded-lg bg-slate-600/30 text-slate-300 text-sm font-semibold">{aiUsers.length} Total</span>
               </div>
             </div>
+            <div className="mb-6 p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm">
+              <p className="text-sm font-semibold text-slate-700 mb-3">AI validation controls</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={aiConfigSaving}
+                  onClick={() => setAiValidationMode("driving")}
+                  className={`px-3 py-2 text-sm font-semibold rounded-xl shadow-sm transition-colors ${
+                    aiValidationConfig.drivingEnabled
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  } disabled:opacity-60`}
+                >
+                  AI Driving: {aiValidationConfig.drivingEnabled ? "ON" : "OFF"}
+                </button>
+                <button
+                  type="button"
+                  disabled={aiConfigSaving}
+                  onClick={() => setAiValidationMode("face")}
+                  className={`px-3 py-2 text-sm font-semibold rounded-xl shadow-sm transition-colors ${
+                    aiValidationConfig.faceEnabled
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  } disabled:opacity-60`}
+                >
+                  AI Face: {aiValidationConfig.faceEnabled ? "ON" : "OFF"}
+                </button>
+              </div>
+            </div>
             {aiUsers.length === 0 ? (
               <div className="p-6 rounded-xl border border-slate-200/80 bg-white shadow-sm">
-                <p className="text-slate-500">No driving licences have been verified by AI yet. When a user uploads a licence and clicks Save, the AI will automatically verify it.</p>
+                <p className="text-slate-500">
+                  {showFace
+                    ? "No face-recognition requests found yet."
+                    : "No driving-licence requests found yet."}
+                </p>
               </div>
             ) : (
               <div className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden overflow-x-auto">
@@ -2243,8 +2277,8 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     <tr className="bg-slate-50 text-left">
                       <th className="py-4 px-4 font-semibold text-slate-700">User</th>
                       <th className="py-4 px-4 font-semibold text-slate-700">Email</th>
-                      <th className="py-4 px-4 font-semibold text-slate-700">Driving</th>
-                      <th className="py-4 px-4 font-semibold text-slate-700">Face</th>
+                      {showDriving && <th className="py-4 px-4 font-semibold text-slate-700">Driving</th>}
+                      {showFace && <th className="py-4 px-4 font-semibold text-slate-700">Face</th>}
                       <th className="py-4 px-4 font-semibold text-slate-700">Photo</th>
                       <th className="py-4 px-4 font-semibold text-slate-700">Admin Override</th>
                     </tr>
@@ -2254,7 +2288,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                       <tr key={m.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
                         <td className="py-4 px-4 font-medium">{m.name}</td>
                         <td className="py-4 px-4 text-slate-600">{m.email}</td>
-                        <td className="py-4 px-4 align-top">
+                        {showDriving && <td className="py-4 px-4 align-top">
                           <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${
                             m.drivingLicenceStatus === "APPROVED" ? "bg-emerald-100 text-emerald-800" :
                             m.drivingLicenceStatus === "REJECTED" ? "bg-red-100 text-red-800" :
@@ -2265,8 +2299,8 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                           <span className="ml-2 text-[11px] text-slate-500">
                             {m.drivingLicenceVerifiedBy || ""}
                           </span>
-                        </td>
-                        <td className="py-4 px-4 align-top">
+                        </td>}
+                        {showFace && <td className="py-4 px-4 align-top">
                           <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${
                             m.identityStatus === "VERIFIED" ? "bg-emerald-100 text-emerald-800" :
                             m.identityStatus === "REJECTED" ? "bg-red-100 text-red-800" :
@@ -2277,28 +2311,36 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                           <span className="ml-2 text-[11px] text-slate-500">
                             {m.identityVerifiedBy || ""}
                           </span>
-                        </td>
+                        </td>}
                         <td className="py-4 px-4">
-                          {m.drivingLicenceUrl ? (
-                            <button type="button" onClick={() => setDlImageModal(m.drivingLicenceUrl)} className="px-3 py-1.5 text-xs font-semibold text-white bg-[var(--primary)] rounded-lg hover:bg-[var(--primary-hover)] transition-colors shadow-sm">
-                              View Photo
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-400">No photo</span>
-                          )}
+                          <div className="inline-flex flex-wrap gap-1">
+                            {showDriving && m.drivingLicenceUrl && (
+                              <button type="button" onClick={() => setDlImageModal(m.drivingLicenceUrl)} className="px-3 py-1.5 text-xs font-semibold text-white bg-[var(--primary)] rounded-lg hover:bg-[var(--primary-hover)] transition-colors shadow-sm">
+                                View DL
+                              </button>
+                            )}
+                            {showFace && m.selfieUrl && (
+                              <button type="button" onClick={() => setDlImageModal(m.selfieUrl)} className="px-3 py-1.5 text-xs font-semibold text-white bg-[#334155] rounded-lg hover:bg-[#1E293B] transition-colors shadow-sm">
+                                View Face
+                              </button>
+                            )}
+                            {((showDriving && !m.drivingLicenceUrl) || (showFace && !m.selfieUrl)) && (
+                              <span className="text-xs text-slate-400">No photo</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <span className="inline-flex flex-wrap gap-1">
-                            {m.drivingLicenceStatus !== "APPROVED" && (
+                            {showDriving && m.drivingLicenceStatus !== "APPROVED" && (
                               <button type="button" onClick={() => handleDlStatus(m.userId, "APPROVED")} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">Approve</button>
                             )}
-                            {m.drivingLicenceStatus !== "REJECTED" && (
+                            {showDriving && m.drivingLicenceStatus !== "REJECTED" && (
                               <button type="button" onClick={() => handleDlStatus(m.userId, "REJECTED")} className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Reject</button>
                             )}
-                            {m.identityStatus !== "VERIFIED" && (
+                            {showFace && m.identityStatus !== "VERIFIED" && (
                               <button type="button" onClick={() => handleIdentityStatus(m.userId, "VERIFIED")} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">Face Approve</button>
                             )}
-                            {m.identityStatus !== "REJECTED" && (
+                            {showFace && m.identityStatus !== "REJECTED" && (
                               <button type="button" onClick={() => handleIdentityStatus(m.userId, "REJECTED")} className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Face Reject</button>
                             )}
                           </span>

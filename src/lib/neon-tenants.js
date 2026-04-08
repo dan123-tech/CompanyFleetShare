@@ -27,6 +27,25 @@ async function neonFetch(path, init = {}) {
   return payload;
 }
 
+async function ensureReadWriteEndpoint(projectId, branchId) {
+  try {
+    await neonFetch(`/projects/${projectId}/endpoints`, {
+      method: "POST",
+      body: JSON.stringify({
+        endpoint: {
+          branch_id: branchId,
+          type: "read_write",
+        },
+      }),
+    });
+  } catch (e) {
+    const msg = String(e?.message || "");
+    // Endpoint may already exist; keep flow idempotent.
+    if (msg.includes("already exists") || msg.includes("409")) return;
+    throw e;
+  }
+}
+
 function normalizeDatabaseName(input) {
   return `tenant_${String(input || "company")
     .toLowerCase()
@@ -52,15 +71,33 @@ export async function provisionNeonTenant({ companyId, companyName }) {
     }),
   });
 
-  await neonFetch(`/projects/${projectId}/branches/${branch.branch.id}/databases`, {
-    method: "POST",
-    body: JSON.stringify({
-      database: {
-        name: databaseName,
-        owner_name: roleName,
-      },
-    }),
-  });
+  try {
+    await neonFetch(`/projects/${projectId}/branches/${branch.branch.id}/databases`, {
+      method: "POST",
+      body: JSON.stringify({
+        database: {
+          name: databaseName,
+          owner_name: roleName,
+        },
+      }),
+    });
+  } catch (e) {
+    const msg = String(e?.message || "");
+    if (msg.includes("could not apply config without read-write endpoint")) {
+      await ensureReadWriteEndpoint(projectId, branch.branch.id);
+      await neonFetch(`/projects/${projectId}/branches/${branch.branch.id}/databases`, {
+        method: "POST",
+        body: JSON.stringify({
+          database: {
+            name: databaseName,
+            owner_name: roleName,
+          },
+        }),
+      });
+    } else {
+      throw e;
+    }
+  }
 
   const conn = await neonFetch(
     `/projects/${projectId}/connection_uri?database_name=${encodeURIComponent(databaseName)}&role_name=${encodeURIComponent(roleName)}&branch_id=${encodeURIComponent(branch.branch.id)}`

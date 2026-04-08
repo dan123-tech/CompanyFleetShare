@@ -5,11 +5,12 @@ import { jsonResponse, errorResponse } from "@/lib/api-helpers";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { verifyIdentityFaceMatch } from "@/lib/identity-verification";
-import { setUserIdentityStatus } from "@/lib/users";
+import { setUserIdentityStatus, setUserSelfieUrl } from "@/lib/users";
 import { DRIVING_LICENCE_PRIVATE_PREFIX } from "@/lib/driving-licence-ref";
 import { resolveBlobReadWriteToken } from "@/lib/blob-env";
 import { getCompanyById } from "@/lib/companies";
 import { getAiValidationSettings } from "@/lib/ai-validation-settings";
+import { persistSelfieImage } from "@/lib/selfie-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,13 @@ const MIME_TYPES = {
   ".png": "image/png",
   ".webp": "image/webp",
 };
+
+function extForMime(mimeType) {
+  const t = String(mimeType || "").toLowerCase();
+  if (t.includes("png")) return ".png";
+  if (t.includes("webp")) return ".webp";
+  return ".jpg";
+}
 
 async function bufferFromStored(stored, localPrefix, localFolder, privatePrefix) {
   if (!stored) throw new Error("Missing image");
@@ -97,6 +105,18 @@ export async function POST(request) {
     );
     const liveScanBuffer = Buffer.from(await liveScanFile.arrayBuffer());
     const liveMime = (liveScanFile.type || "image/jpeg").toLowerCase();
+    const liveExt = extForMime(liveMime);
+
+    try {
+      const storedSelfie = await persistSelfieImage(liveScanBuffer, {
+        userId: session.userId,
+        ext: liveExt,
+        contentType: liveMime,
+      });
+      await setUserSelfieUrl(session.userId, { selfieUrl: storedSelfie });
+    } catch {
+      // Keep verification flow running even if preview image persistence fails.
+    }
 
     const result = await verifyIdentityFaceMatch(
       { ...licence, filename: `licence-${session.userId}.jpg` },
