@@ -9,6 +9,7 @@ import { getCompanyById } from "@/lib/companies";
 import { getUserById } from "@/lib/users";
 import { jsonResponse, errorResponse } from "@/lib/api-helpers";
 import { drivingLicenceUrlForApi } from "@/lib/driving-licence-ref";
+import { selfieUrlForApi } from "@/lib/selfie-ref";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -30,6 +31,12 @@ export async function GET() {
     companyId: session.companyId ?? null,
     drivingLicenceStatus: userRow?.drivingLicenceStatus ?? null,
     drivingLicenceUrl: drivingLicenceUrlForApi(userRow?.drivingLicenceUrl, session.userId),
+    selfieUrl: selfieUrlForApi(userRow?.selfieUrl, session.userId),
+    identityStatus: userRow?.identityStatus ?? null,
+    identityVerifiedAt: userRow?.identityVerifiedAt ?? null,
+    identityVerifiedBy: userRow?.identityVerifiedBy ?? null,
+    identityScore: userRow?.identityScore ?? null,
+    identityReason: userRow?.identityReason ?? null,
     mfaEnabled: Boolean(userRow?.mfaEnabled),
     mustChangePassword: Boolean(userRow?.mustChangePassword),
     emailBookingNotifications: userRow?.emailBookingNotifications !== false,

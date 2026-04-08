@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment, useMemo } from "react";
+import { useState, useEffect, Fragment, useMemo, useRef } from "react";
 import { LayoutGrid, IdCard, Car, Wrench, Calendar, History, CalendarDays, Shield, Info } from "lucide-react";
 import { Sidebar, NavItem, NavSection, NavLabel } from "./Sidebar";
 import FleetBookingCalendar from "./FleetBookingCalendar";
@@ -16,6 +16,7 @@ import {
   apiExtendReservation,
   apiUploadDrivingLicence,
   apiDeleteDrivingLicence,
+  apiVerifyIdentity,
   apiUserMfaUpdate,
   apiUserEmailNotifications,
   apiUserCalendarFeedUrl,
@@ -98,6 +99,15 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [selectedDlFile, setSelectedDlFile] = useState(null);
   const [dlPreviewUrl, setDlPreviewUrl] = useState(null);
   const [dlNotice, setDlNotice] = useState(null);
+  const [identityVerifying, setIdentityVerifying] = useState(false);
+  const [liveScanStarting, setLiveScanStarting] = useState(false);
+  const [liveScanReady, setLiveScanReady] = useState(false);
+  const [liveScanPreviewUrl, setLiveScanPreviewUrl] = useState(null);
+  const [liveScanCaptureFile, setLiveScanCaptureFile] = useState(null);
+  const [identityNotice, setIdentityNotice] = useState(null);
+  const liveVideoRef = useRef(null);
+  const liveCanvasRef = useRef(null);
+  const liveStreamRef = useRef(null);
   const [now, setNow] = useState(() => new Date());
   const [scheduleModal, setScheduleModal] = useState(null);
   const [scheduleStart, setScheduleStart] = useState("");
@@ -113,7 +123,8 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [calendarUrl, setCalendarUrl] = useState("");
   const [calendarMsg, setCalendarMsg] = useState(null);
   const dlStatus = user?.drivingLicenceStatus ?? null;
-  const canReserve = dlStatus === "APPROVED";
+  const identityStatus = user?.identityStatus ?? null;
+  const canReserve = dlStatus === "APPROVED" && identityStatus === "VERIFIED";
 
   async function load() {
     setLoading(true);
@@ -252,6 +263,16 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
     return () => { if (dlPreviewUrl) URL.revokeObjectURL(dlPreviewUrl); };
   }, [dlPreviewUrl]);
 
+  useEffect(() => {
+    return () => {
+      if (liveScanPreviewUrl) URL.revokeObjectURL(liveScanPreviewUrl);
+      if (liveStreamRef.current) {
+        for (const track of liveStreamRef.current.getTracks()) track.stop();
+        liveStreamRef.current = null;
+      }
+    };
+  }, [liveScanPreviewUrl]);
+
   async function handleDlSave() {
     if (!selectedDlFile) return;
     setDlUploading(true);
@@ -298,6 +319,88 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
       setError(err.message || "Delete failed");
     } finally {
       setDlDeleting(false);
+    }
+  }
+
+  async function startLiveScan() {
+    setLiveScanStarting(true);
+    setError("");
+    setIdentityNotice(null);
+    try {
+      if (liveScanPreviewUrl) URL.revokeObjectURL(liveScanPreviewUrl);
+      setLiveScanPreviewUrl(null);
+      setLiveScanCaptureFile(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      liveStreamRef.current = stream;
+      if (liveVideoRef.current) {
+        liveVideoRef.current.srcObject = stream;
+      }
+      setLiveScanReady(true);
+    } catch (err) {
+      setError(err.message || "Could not open camera");
+    } finally {
+      setLiveScanStarting(false);
+    }
+  }
+
+  function stopLiveScan() {
+    if (liveStreamRef.current) {
+      for (const track of liveStreamRef.current.getTracks()) track.stop();
+      liveStreamRef.current = null;
+    }
+    if (liveVideoRef.current) {
+      liveVideoRef.current.srcObject = null;
+    }
+    setLiveScanReady(false);
+  }
+
+  async function captureLiveScanFrame() {
+    const video = liveVideoRef.current;
+    const canvas = liveCanvasRef.current;
+    if (!video || !canvas) return;
+    const w = video.videoWidth || 720;
+    const h = video.videoHeight || 720;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, w, h);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) {
+      setError("Failed to capture frame from camera");
+      return;
+    }
+    const file = new File([blob], `live-scan-${Date.now()}.jpg`, { type: "image/jpeg" });
+    if (liveScanPreviewUrl) URL.revokeObjectURL(liveScanPreviewUrl);
+    setLiveScanPreviewUrl(URL.createObjectURL(file));
+    setLiveScanCaptureFile(file);
+    stopLiveScan();
+  }
+
+  async function handleIdentityVerify() {
+    setIdentityVerifying(true);
+    setError("");
+    setIdentityNotice(null);
+    try {
+      if (!liveScanCaptureFile) {
+        setError("Please capture a live face scan first.");
+        return;
+      }
+      const data = await apiVerifyIdentity(liveScanCaptureFile);
+      await onUserUpdated?.();
+      if (data.identityStatus === "VERIFIED") {
+        setIdentityNotice({ type: "success", text: "Identity verified successfully. You can reserve cars now." });
+      } else if (data.identityStatus === "REJECTED") {
+        setIdentityNotice({ type: "warning", text: "Identity verification failed. Upload a clearer selfie or contact admin." });
+      } else {
+        setIdentityNotice({ type: "warning", text: data.message || "Verification pending admin review." });
+      }
+    } catch (err) {
+      setError(err.message || "Identity verification failed");
+    } finally {
+      setIdentityVerifying(false);
     }
   }
 
@@ -602,6 +705,82 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
               )}
               {dlStatus === "REJECTED" && (
                 <p className="text-sm text-red-700 mt-3">Your licence was rejected. You can upload a new photo for review.</p>
+              )}
+            </div>
+
+            <div className="bg-white rounded-[12px] shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)] border border-slate-100/80 p-4 sm:p-6 max-w-lg mt-4">
+              <div className="mb-4">
+                <span className="text-sm font-semibold text-slate-600">Identity status: </span>
+                <span className={`px-2 py-0.5 rounded-lg text-sm font-medium ${
+                  identityStatus === "VERIFIED" ? "bg-emerald-100 text-emerald-800" :
+                  identityStatus === "PENDING" ? "bg-amber-100 text-amber-800" :
+                  identityStatus === "PENDING_REVIEW" ? "bg-amber-100 text-amber-800" :
+                  identityStatus === "REJECTED" ? "bg-red-100 text-red-800" :
+                  "bg-slate-100 text-slate-800"
+                }`}>
+                  {identityStatus === "VERIFIED" ? "Verified" : identityStatus === "PENDING" ? "Pending" : identityStatus === "PENDING_REVIEW" ? "Pending admin review" : identityStatus === "REJECTED" ? "Rejected" : "Not started"}
+                </span>
+              </div>
+              <p className="text-sm text-slate-500 mb-2">
+                Use a live face scan (camera) instead of selfie upload.
+              </p>
+              {liveScanReady && (
+                <div className="mb-3 rounded-xl border border-slate-200 overflow-hidden bg-black">
+                  <video ref={liveVideoRef} autoPlay playsInline muted className="w-full h-auto max-h-72 object-contain" />
+                </div>
+              )}
+              <canvas ref={liveCanvasRef} className="hidden" />
+              {liveScanPreviewUrl && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-slate-700 mb-1">Captured live scan:</p>
+                  <img src={liveScanPreviewUrl} alt="Live scan preview" className="rounded-xl border border-slate-200 max-h-44 object-contain bg-slate-50 mb-3" />
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={startLiveScan}
+                  disabled={liveScanStarting || liveScanReady}
+                  className="px-5 py-2.5 rounded-xl font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                  {liveScanStarting ? "Opening camera…" : "Start live scan"}
+                </button>
+                <button
+                  type="button"
+                  onClick={captureLiveScanFrame}
+                  disabled={!liveScanReady}
+                  className="px-5 py-2.5 rounded-xl font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                  Capture frame
+                </button>
+                <button
+                  type="button"
+                  onClick={handleIdentityVerify}
+                  disabled={identityVerifying || !user?.drivingLicenceUrl || !liveScanCaptureFile}
+                  className="px-5 py-2.5 rounded-xl font-semibold text-white bg-[#1E293B] hover:bg-[#334155] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                  {identityVerifying ? "Verifying…" : "Verify liveness + identity"}
+                </button>
+                {liveScanReady && (
+                  <button
+                    type="button"
+                    onClick={stopLiveScan}
+                    className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors shadow-sm"
+                  >
+                    Stop camera
+                  </button>
+                )}
+              </div>
+              {identityNotice && (
+                <div
+                  className={`mt-4 rounded-xl px-4 py-3 text-sm ${
+                    identityNotice.type === "success"
+                      ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+                      : "bg-amber-50 text-amber-900 border border-amber-200"
+                  }`}
+                >
+                  {identityNotice.text}
+                </div>
               )}
             </div>
           </section>
@@ -950,7 +1129,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
             <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6">Available Cars</h2>
             {!canReserve && (
               <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-sm">
-                You need an approved driving licence to reserve a car. Go to <button type="button" onClick={() => setSection("drivingLicence")} className="underline font-semibold">Driving licence</button> to upload and wait for approval.
+                You need an approved driving licence and verified identity to reserve a car. Go to <button type="button" onClick={() => setSection("drivingLicence")} className="underline font-semibold">Driving licence</button> to complete both steps.
               </div>
             )}
             <div className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden overflow-x-auto">

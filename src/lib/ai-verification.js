@@ -1,10 +1,16 @@
 /**
- * AI Verification – call the AI Docker service to verify driving licence experience.
- * Base URL: AI_VERIFICATION_URL (default http://localhost:8080)
+ * AI Verification – call AI backend service to verify driving licence experience.
+ * Base URL priority:
+ * 1) AI_DRIVING_LICENCE_LLM_CLOUDFLARE_URL (recommended on Vercel)
+ * 2) AI_VERIFICATION_URL (legacy / local Docker)
+ * 3) http://localhost:8080
  * Form field: AI_VERIFY_FORM_FIELD (default "file") – some services expect "image"
  */
 
-const DEFAULT_AI_URL = process.env.AI_VERIFICATION_URL || "http://localhost:8080";
+const DEFAULT_AI_URL =
+  process.env.AI_DRIVING_LICENCE_LLM_CLOUDFLARE_URL ||
+  process.env.AI_VERIFICATION_URL ||
+  "http://localhost:8080";
 const AI_VERIFY_PATH = process.env.AI_VERIFY_PATH || "/validate";
 const AI_FORM_FIELD = process.env.AI_VERIFY_FORM_FIELD || "file";
 const AI_TIMEOUT_MS = parseInt(process.env.AI_VERIFICATION_TIMEOUT_MS || "30000", 10);

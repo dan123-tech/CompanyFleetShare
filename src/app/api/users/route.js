@@ -10,6 +10,7 @@ import { requireCompany, requireAdmin, jsonResponse, errorResponse, dataSourceNo
 import { listFirebaseUsers, isFirebaseConfigured } from "@/lib/connectors/firebase-users";
 import { listSqlServerUsers, createSqlServerUser } from "@/lib/connectors/sql-server-users";
 import { drivingLicenceUrlForApi } from "@/lib/driving-licence-ref";
+import { selfieUrlForApi } from "@/lib/selfie-ref";
 import { sendAdminCreatedAccountEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -44,6 +45,7 @@ export async function GET(request) {
           users.map((u) => ({
             ...u,
             drivingLicenceUrl: drivingLicenceUrlForApi(u.drivingLicenceUrl, u.userId),
+            selfieUrl: selfieUrlForApi(u.selfieUrl, u.userId),
           }))
         );
       } catch (err) {
@@ -97,6 +99,12 @@ export async function GET(request) {
         drivingLicenceUrl: drivingLicenceUrlForApi(m.user.drivingLicenceUrl, m.userId),
         drivingLicenceStatus: m.user.drivingLicenceStatus,
         drivingLicenceVerifiedBy: m.user.drivingLicenceVerifiedBy || null,
+        selfieUrl: selfieUrlForApi(m.user.selfieUrl, m.userId),
+        identityStatus: m.user.identityStatus || null,
+        identityVerifiedAt: m.user.identityVerifiedAt || null,
+        identityVerifiedBy: m.user.identityVerifiedBy || null,
+        identityScore: m.user.identityScore ?? null,
+        identityReason: m.user.identityReason || null,
         createdAt: m.createdAt,
       }))
     );

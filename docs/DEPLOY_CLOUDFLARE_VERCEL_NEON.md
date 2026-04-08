@@ -25,6 +25,23 @@ Same as README: create project, set **pooled** → `DATABASE_URL`, **direct** �
 1. Import the Git repo, add env vars: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`, `NEXTAUTH_URL`.
 2. Deploy and note the **`.vercel.app`** URL (or attach a domain in Vercel first).
 
+### 2.1 AI backend on Cloudflare (for Vercel runtime)
+
+If your AI validator lives in a separate Cloudflare-hosted backend (for example `ai-driving-licence-llm-cloudflare`), set these in **Vercel Project → Settings → Environment Variables**:
+
+- `AI_DRIVING_LICENCE_LLM_CLOUDFLARE_URL` = base URL of that backend (no trailing slash)
+- Optional overrides:
+  - `AI_VERIFY_PATH` (default `/validate`)
+  - `AI_FACE_MATCH_PATH` (default `/face-match`)
+  - `AI_FACE_MATCH_THRESHOLD`
+  - `AI_FACE_MATCH_TIMEOUT_MS`
+
+Priority used by the app:
+
+1. `AI_DRIVING_LICENCE_LLM_CLOUDFLARE_URL` (recommended for Vercel)
+2. `AI_VERIFICATION_URL` (legacy/local fallback)
+3. `http://localhost:8080` (dev fallback)
+
 ### 3. Cloudflare (custom domain)
 
 1. Add the domain to Cloudflare (change nameservers at your registrar if needed).

@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { updateMemberRole, removeMember, setUserDrivingLicenceStatus } from "@/lib/users";
+import { updateMemberRole, removeMember, setUserDrivingLicenceStatus, setUserIdentityStatus } from "@/lib/users";
 import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { updateSqlServerUser, deleteSqlServerUser } from "@/lib/connectors/sql-server-users";
 import { requireAdmin, jsonResponse, errorResponse } from "@/lib/api-helpers";
@@ -13,6 +13,7 @@ import { writeAuditLog } from "@/lib/audit";
 const patchSchema = z.object({
   role: z.enum(["ADMIN", "USER"]).optional(),
   drivingLicenceStatus: z.enum(["APPROVED", "REJECTED"]).optional(),
+  identityStatus: z.enum(["VERIFIED", "REJECTED", "PENDING_REVIEW"]).optional(),
   name: z.string().min(1).max(255).optional(),
   email: z.string().email().max(255).optional(),
 });
@@ -33,6 +34,7 @@ export async function PATCH(request, { params }) {
       if (data.name !== undefined) payload.name = data.name;
       if (data.email !== undefined) payload.email = data.email;
       if (data.drivingLicenceStatus !== undefined) payload.drivingLicenceStatus = data.drivingLicenceStatus;
+      if (data.identityStatus !== undefined) payload.identityStatus = data.identityStatus;
       if (Object.keys(payload).length === 0) return errorResponse("No valid update field", 422);
       const user = await updateSqlServerUser(out.session.companyId, userId, payload);
       if (!user) return errorResponse("User not found", 404);
@@ -74,6 +76,22 @@ export async function PATCH(request, { params }) {
         meta: { newStatus: data.drivingLicenceStatus },
       });
       return jsonResponse({ ok: true, drivingLicenceStatus: data.drivingLicenceStatus });
+    } catch {
+      return errorResponse("Member not found", 404);
+    }
+  }
+  if (data.identityStatus != null) {
+    try {
+      await setUserIdentityStatus(userId, data.identityStatus, { verifiedBy: "ADMIN" });
+      await writeAuditLog({
+        companyId: out.session.companyId,
+        actorId: out.session.userId,
+        action: "DRIVING_LICENCE_STATUS_CHANGED",
+        entityType: "USER",
+        entityId: userId,
+        meta: { identityStatus: data.identityStatus },
+      });
+      return jsonResponse({ ok: true, identityStatus: data.identityStatus });
     } catch {
       return errorResponse("Member not found", 404);
     }

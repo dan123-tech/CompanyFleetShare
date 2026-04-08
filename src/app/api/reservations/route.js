@@ -12,6 +12,9 @@ import { requireCompany, jsonResponse, errorResponse, dataSourceNotConfiguredRes
 import { writeAuditLog } from "@/lib/audit";
 import { sendReservationConfirmationEmail, shouldSendBookingEmail } from "@/lib/email";
 
+const ENFORCE_IDENTITY_VERIFICATION =
+  String(process.env.ENFORCE_IDENTITY_VERIFICATION || "").toLowerCase() === "true";
+
 const postSchema = z.object({
   carId: z.string().min(1),
   startDate: z.string().datetime().optional(),
@@ -141,6 +144,13 @@ export async function POST(request) {
   const currentUser = await getUserById(out.session.userId);
   if (currentUser?.drivingLicenceStatus !== "APPROVED") {
     return errorResponse("You must have an approved driving licence to reserve a car. Upload your driving licence and wait for admin approval.", 403);
+  }
+  if (ENFORCE_IDENTITY_VERIFICATION && currentUser?.identityStatus !== "VERIFIED") {
+    return errorResponse(
+      "Identity verification required before reserving a car (upload selfie and verify identity).",
+      403,
+      { code: "IDENTITY_NOT_VERIFIED" }
+    );
   }
   const parsed = postSchema.safeParse(await request.json());
   if (!parsed.success) return errorResponse("Invalid input", 422);

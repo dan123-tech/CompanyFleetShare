@@ -44,6 +44,14 @@ enum DrivingLicenceStatus {
   REJECTED
 }
 
+enum IdentityStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+  PENDING_REVIEW
+}
+
 enum ExceededApprovalStatus {
   PENDING_APPROVAL
   APPROVED
@@ -70,6 +78,12 @@ model User {
   drivingLicenceUrl         String?              // photo of driving licence
   drivingLicenceStatus      DrivingLicenceStatus? // PENDING | APPROVED | REJECTED; null = not uploaded
   drivingLicenceVerifiedBy  String?              // "AI" | "ADMIN" – who set the status
+  selfieUrl                 String?
+  identityStatus            IdentityStatus?
+  identityVerifiedAt        DateTime?
+  identityVerifiedBy        String?
+  identityScore             Float?
+  identityReason            String?
   fcmToken                  String?              // FCM device token for booking reminders (mobile)
   fcmTokenUpdatedAt         DateTime?
   /** Random id for cookie session; new web login replaces → other browser tabs log out */

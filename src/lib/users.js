@@ -168,6 +168,12 @@ export async function listCompanyMembers(companyId, status) {
           drivingLicenceUrl: true,
           drivingLicenceStatus: true,
           drivingLicenceVerifiedBy: true,
+          selfieUrl: true,
+          identityStatus: true,
+          identityVerifiedAt: true,
+          identityVerifiedBy: true,
+          identityScore: true,
+          identityReason: true,
         },
       },
     },
@@ -211,6 +217,11 @@ export async function setUserDrivingLicenceUrl(userId, { drivingLicenceUrl }) {
       drivingLicenceUrl,
       drivingLicenceStatus: "PENDING",
       drivingLicenceVerifiedBy: null,
+      identityStatus: "UNVERIFIED",
+      identityVerifiedAt: null,
+      identityVerifiedBy: null,
+      identityScore: null,
+      identityReason: null,
     },
   });
 }
@@ -240,6 +251,68 @@ export async function clearUserDrivingLicence(userId) {
       drivingLicenceUrl: null,
       drivingLicenceStatus: null,
       drivingLicenceVerifiedBy: null,
+      identityStatus: null,
+      identityVerifiedAt: null,
+      identityVerifiedBy: null,
+      identityScore: null,
+      identityReason: null,
+    },
+  });
+}
+
+/**
+ * Update current user's selfie (upload: set URL and status PENDING).
+ * @param {string} userId
+ * @param {{ selfieUrl: string }}
+ */
+export async function setUserSelfieUrl(userId, { selfieUrl }) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      selfieUrl,
+      identityStatus: "PENDING",
+      identityVerifiedAt: null,
+      identityVerifiedBy: null,
+      identityScore: null,
+      identityReason: null,
+    },
+  });
+}
+
+/**
+ * Update user's identity verification status.
+ * @param {string} userId
+ * @param {"UNVERIFIED"|"PENDING"|"VERIFIED"|"REJECTED"|"PENDING_REVIEW"} identityStatus
+ * @param {{ verifiedBy?: string, score?: number|null, reason?: string|null }} options
+ */
+export async function setUserIdentityStatus(userId, identityStatus, options = {}) {
+  const isFinal = identityStatus === "VERIFIED" || identityStatus === "REJECTED";
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      identityStatus,
+      identityVerifiedAt: isFinal ? new Date() : null,
+      identityVerifiedBy: options.verifiedBy ?? null,
+      identityScore: typeof options.score === "number" ? options.score : null,
+      identityReason: options.reason ?? null,
+    },
+  });
+}
+
+/**
+ * Clear current user's selfie and identity status.
+ * @param {string} userId
+ */
+export async function clearUserSelfie(userId) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      selfieUrl: null,
+      identityStatus: null,
+      identityVerifiedAt: null,
+      identityVerifiedBy: null,
+      identityScore: null,
+      identityReason: null,
     },
   });
 }
@@ -275,6 +348,12 @@ export async function getUserById(userId) {
       name: true,
       drivingLicenceStatus: true,
       drivingLicenceUrl: true,
+      selfieUrl: true,
+      identityStatus: true,
+      identityVerifiedAt: true,
+      identityVerifiedBy: true,
+      identityScore: true,
+      identityReason: true,
       mfaEnabled: true,
       mustChangePassword: true,
       emailBookingNotifications: true,

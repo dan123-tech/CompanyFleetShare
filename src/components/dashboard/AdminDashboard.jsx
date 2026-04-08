@@ -38,6 +38,7 @@ import {
   apiRemoveUser,
   apiUpdateCompanyCurrent,
   apiSetUserDrivingLicenceStatus,
+  apiSetUserIdentityStatus,
   apiPendingExceededApprovals,
   apiSetExceededApproval,
   apiRefreshReservationCodes,
@@ -811,6 +812,15 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   async function handleDlStatus(userId, status) {
     try {
       await apiSetUserDrivingLicenceStatus(userId, status);
+      load();
+    } catch (err) {
+      setError(err.message || "Failed to update");
+    }
+  }
+
+  async function handleIdentityStatus(userId, status) {
+    try {
+      await apiSetUserIdentityStatus(userId, status);
       load();
     } catch (err) {
       setError(err.message || "Failed to update");
@@ -1815,6 +1825,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     <th className="py-4 px-4 font-semibold text-slate-700">Role</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Status</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Driving licence</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Identity</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Actions</th>
                   </tr>
                 </thead>
@@ -1854,6 +1865,25 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                           </>
                         )}
                       </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
+                          m.identityStatus === "VERIFIED" ? "bg-emerald-100 text-emerald-800" :
+                          m.identityStatus === "PENDING" || m.identityStatus === "PENDING_REVIEW" ? "bg-amber-100 text-amber-800" :
+                          m.identityStatus === "REJECTED" ? "bg-red-100 text-red-800" :
+                          "bg-slate-100 text-slate-600"
+                        }`}>
+                          {m.identityStatus || "—"}
+                        </span>
+                        {m.selfieUrl && (
+                          <button type="button" onClick={() => setDlImageModal(m.selfieUrl)} className="ml-2 px-2 py-1 text-xs font-semibold text-[var(--primary)] hover:underline">View</button>
+                        )}
+                        {(m.identityStatus === "PENDING_REVIEW" || m.identityStatus === "REJECTED" || m.identityStatus === "PENDING") && (
+                          <span className="inline-flex gap-1 ml-1">
+                            <button type="button" onClick={() => handleIdentityStatus(m.userId, "VERIFIED")} className="px-2 py-1 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Approve</button>
+                            <button type="button" onClick={() => handleIdentityStatus(m.userId, "REJECTED")} className="px-2 py-1 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700">Reject</button>
+                          </span>
+                        )}
+                      </td>
                       <td className="py-4 px-4 flex flex-wrap gap-2">
                         {m.userId !== user?.id ? (
                           <button
@@ -1883,7 +1913,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     </tr>
                   ))}
                   {filteredUsers.length === 0 && !loading && (
-                    <tr><td colSpan={6} className="py-10 px-4 text-center text-slate-500">{users.length === 0 ? "No users yet" : "No users match the filters"}</td></tr>
+                    <tr><td colSpan={7} className="py-10 px-4 text-center text-slate-500">{users.length === 0 ? "No users yet" : "No users match the filters"}</td></tr>
                   )}
                 </tbody>
               </table>

@@ -79,6 +79,49 @@ Applied via **`next.config.mjs`** (`headers()`) and reinforced in **`src/middlew
 
 - **`public/.well-known/security.txt`** — security contact placeholder (`Contact:`). **Replace** with a monitored email before production disclosure expectations.
 
+---
+
+## 4. Identity verification (anti-impersonation)
+
+- Added a second verification factor for users: **selfie + face match** against uploaded driving licence.
+- Added `User` identity fields and enum in Prisma:
+  - `selfieUrl`
+  - `identityStatus` (`UNVERIFIED`, `PENDING`, `VERIFIED`, `REJECTED`, `PENDING_REVIEW`)
+  - `identityVerifiedAt`, `identityVerifiedBy`, `identityScore`, `identityReason`
+- Added secure selfie storage/serving modules:
+  - `src/lib/selfie-storage.js`
+  - `src/lib/selfie-ref.js`
+  - `src/lib/selfie-serve.js`
+- Added new APIs:
+  - `POST/DELETE /api/users/me/selfie`
+  - `POST /api/users/me/identity/verify`
+  - `GET /api/users/[id]/selfie/image`
+- Added AI client for face matching:
+  - `src/lib/identity-verification.js`
+  - Uses `AI_FACE_MATCH_URL`, `AI_FACE_MATCH_PATH`, `AI_FACE_MATCH_THRESHOLD`, `AI_FACE_MATCH_TIMEOUT_MS`
+- Added booking gate (feature-flagged):
+  - If `ENFORCE_IDENTITY_VERIFICATION=true`, reservation create requires `identityStatus === VERIFIED`.
+- Added user dashboard identity UI:
+  - selfie upload/delete
+  - verify identity action
+  - identity status badges and notices
+- Added admin review controls in user management:
+  - manual approve/reject for identity status.
+
+### 4.1 Vercel backend switch to Cloudflare AI service
+
+- Updated AI backend resolution so Vercel can use a Cloudflare-hosted validator service directly.
+- New preferred env:
+  - `AI_DRIVING_LICENCE_LLM_CLOUDFLARE_URL`
+- Backward-compatible fallbacks remain:
+  - `AI_VERIFICATION_URL`
+  - local fallback `http://localhost:8080`
+- Applied to:
+  - `src/lib/ai-verification.js` (driving licence validation)
+  - `src/lib/identity-verification.js` (face match for identity verification)
+- Updated `.env.example` with deployment guidance for Vercel + Cloudflare AI backend.
+
+
 ### 3.3 CSRF-style protection for state-changing auth APIs
 
 **Hidden form tokens** are not used on JSON `fetch` login/register; instead, **`src/lib/security/csrf.js`** enforces **`Origin` / `Referer`** against the app origin and **`getCorsAllowedOrigins()`** (from **`NEXT_PUBLIC_APP_URL`** / **`CORS_ALLOWED_ORIGINS`**).

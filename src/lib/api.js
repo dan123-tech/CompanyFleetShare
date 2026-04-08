@@ -342,6 +342,61 @@ export async function apiSetUserDrivingLicenceStatus(userId, drivingLicenceStatu
   return data;
 }
 
+export async function apiUploadSelfie(file) {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/users/me/selfie", {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+    headers: { ...getWebTabSidHeaders() },
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Upload failed");
+  return data;
+}
+
+export async function apiDeleteSelfie() {
+  const res = await fetch("/api/users/me/selfie", {
+    method: "DELETE",
+    credentials: "include",
+    cache: "no-store",
+    headers: { ...getWebTabSidHeaders() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Delete failed");
+  return data;
+}
+
+export async function apiVerifyIdentity(liveScanFile) {
+  if (liveScanFile) {
+    const form = new FormData();
+    form.append("liveScan", liveScanFile);
+    const res = await fetch("/api/users/me/identity/verify", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { ...getWebTabSidHeaders() },
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Identity verification failed");
+    return data;
+  }
+  const res = await fetch("/api/users/me/identity/verify", getOpts("POST"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Identity verification failed");
+  return data;
+}
+
+export async function apiSetUserIdentityStatus(userId, identityStatus) {
+  const res = await fetch(`/api/users/${userId}`, getOpts("PATCH", { identityStatus }));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to update identity verification");
+  return data;
+}
+
 export async function apiRemoveUser(userId) {
   const res = await fetch(`/api/users/${userId}`, getOpts("DELETE"));
   const data = await res.json().catch(() => ({}));
