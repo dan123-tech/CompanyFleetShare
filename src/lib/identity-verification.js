@@ -122,28 +122,18 @@ async function trySessionFlow(base, licence, liveScan, controller) {
   const headers = buildFaceAuthHeaders();
   const licenceB64 = toBase64(licence.imageBuffer);
   const liveScanB64 = toBase64(liveScan.imageBuffer);
+  const liveScanDataUrl = `data:${liveScan.mimeType || "image/jpeg"};base64,${liveScanB64}`;
   const createUrl = `${base}/api/session-create`;
-  const createSession = async (asBase64) => {
-    const createForm = new FormData();
-    if (asBase64) {
-      createForm.append("license_image", licenceB64);
-      createForm.append("licence", licenceB64);
-      createForm.append("license_image_base64", licenceB64);
-      createForm.append("license_mime_type", licence.mimeType || "image/jpeg");
-    } else {
-      const licencePart = makeImagePart(licence.imageBuffer, licence.mimeType, licence.filename);
-      createForm.append("license_image", licencePart, licence.filename);
-      createForm.append("licence", licencePart, licence.filename);
-    }
-    return fetch(createUrl, {
-      method: "POST",
-      body: createForm,
-      signal: controller.signal,
-      headers,
-    });
-  };
-
-  const createRes = await createSession(false);
+  const createForm = new FormData();
+  const licencePart = makeImagePart(licence.imageBuffer, licence.mimeType, licence.filename);
+  createForm.append("license_image", licencePart, licence.filename);
+  createForm.append("licence", licencePart, licence.filename);
+  const createRes = await fetch(createUrl, {
+    method: "POST",
+    body: createForm,
+    signal: controller.signal,
+    headers,
+  });
   if (createRes.status === 404 || createRes.status === 405) {
     await createRes.text();
     return null;
@@ -174,21 +164,42 @@ async function trySessionFlow(base, licence, liveScan, controller) {
   }
 
   const verifyUrl = `${base}/api/session-verify`;
-  const verifySession = async (sid, asBase64) => {
+  const verifySession = async (sid, mode) => {
+    if (mode === "json") {
+      return fetch(verifyUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          session_id: String(sid),
+          selfie_image: liveScanB64,
+          selfie_image_base64: liveScanB64,
+          image: liveScanB64,
+          mime_type: liveScan.mimeType || "image/jpeg",
+        }),
+        signal: controller.signal,
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
     const verifyForm = new FormData();
     verifyForm.append("session_id", String(sid));
-    if (asBase64) {
-      verifyForm.append("selfie_image", liveScanB64);
-      verifyForm.append("selfie_image_base64", liveScanB64);
+    if (mode === "base64" || mode === "dataurl") {
+      const value = mode === "dataurl" ? liveScanDataUrl : liveScanB64;
+      verifyForm.append("selfie_image", value);
+      verifyForm.append("selfie_image_base64", value);
+      verifyForm.append("selfie", value);
+      verifyForm.append("liveScan", value);
+      verifyForm.append("image", value);
       verifyForm.append("selfie_mime_type", liveScan.mimeType || "image/jpeg");
-      verifyForm.append("liveScan", liveScanB64);
-      verifyForm.append("selfie", liveScanB64);
-      verifyForm.append("image", liveScanB64);
+      verifyForm.append("mime_type", liveScan.mimeType || "image/jpeg");
     } else {
+      // mode === "file"
       const liveScanPart = makeImagePart(liveScan.imageBuffer, liveScan.mimeType, liveScan.filename);
       verifyForm.append("selfie_image", liveScanPart, liveScan.filename);
-      verifyForm.append("liveScan", liveScanPart, liveScan.filename);
       verifyForm.append("selfie", liveScanPart, liveScan.filename);
+      verifyForm.append("liveScan", liveScanPart, liveScan.filename);
       verifyForm.append("image", liveScanPart, liveScan.filename);
     }
     return fetch(verifyUrl, {
@@ -199,41 +210,34 @@ async function trySessionFlow(base, licence, liveScan, controller) {
     });
   };
 
-  let verifyRes = await verifySession(sessionId, false);
+  let verifyRes = await verifySession(sessionId, "file");
   if (verifyRes.status === 404 || verifyRes.status === 405) {
     const text = await verifyRes.text();
     throw new Error(`Face session-verify endpoint unavailable: ${text.slice(0, 200)}`);
   }
   if (!verifyRes.ok) {
-    const text = await verifyRes.text();
-    // Some session backends expect base64 fields (not binary files).
-    if (
-      verifyRes.status >= 500 &&
-      text.toLowerCase().includes("atob() called with invalid base64")
-    ) {
-      const createResB64 = await createSession(true);
-      if (!createResB64.ok) {
-        const textCreateB64 = await createResB64.text();
-        throw new Error(
-          `Face session-create (base64 retry) returned ${createResB64.status}: ${textCreateB64.slice(0, 200)}`
-        );
+    const firstText = await verifyRes.text();
+    const looksBase64Related =
+      firstText.toLowerCase().includes("atob() called with invalid base64") ||
+      firstText.toLowerCase().includes("invalid base64") ||
+      firstText.toLowerCase().includes("not valid base64");
+
+    if (verifyRes.status >= 400 && looksBase64Related) {
+      // Retry expected backend encodings without recreating the session.
+      const modes = ["base64", "dataurl", "json"];
+      let lastErr = firstText;
+      for (const mode of modes) {
+        verifyRes = await verifySession(sessionId, mode);
+        if (verifyRes.ok) break;
+        lastErr = await verifyRes.text();
       }
-      const createdB64 = await createResB64.json();
-      sessionId =
-        createdB64?.session_id ||
-        createdB64?.sessionId ||
-        createdB64?.id ||
-        createdB64?.data?.session_id;
-      if (!sessionId) throw new Error("Face session-create (base64 retry) missing session_id");
-      verifyRes = await verifySession(sessionId, true);
       if (!verifyRes.ok) {
-        const textVerifyB64 = await verifyRes.text();
         throw new Error(
-          `Face session-verify (base64 retry) returned ${verifyRes.status}: ${textVerifyB64.slice(0, 200)}`
+          `Face session-verify retries failed: ${verifyRes.status}: ${String(lastErr).slice(0, 200)}`
         );
       }
     } else {
-      throw new Error(`Face session-verify returned ${verifyRes.status}: ${text.slice(0, 200)}`);
+      throw new Error(`Face session-verify returned ${verifyRes.status}: ${firstText.slice(0, 200)}`);
     }
   }
   const verified = await verifyRes.json();
