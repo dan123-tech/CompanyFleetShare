@@ -19,6 +19,11 @@ const AI_TIMEOUT_MS = parseInt(
   10
 );
 const AI_MATCH_THRESHOLD = parseFloat(process.env.AI_FACE_MATCH_THRESHOLD || "0.35");
+const SESSION_FLOW_MODE = String(process.env.AI_FACE_RECOGNITION_USE_SESSION_FLOW || "").toLowerCase();
+const USE_SESSION_FLOW_FALLBACK =
+  SESSION_FLOW_MODE === "true" ||
+  (SESSION_FLOW_MODE !== "false" &&
+    /ai-face-recognition(-nine)?\.vercel\.app/i.test(DEFAULT_AI_URL));
 
 function buildFaceAuthHeaders() {
   const headers = {};
@@ -106,19 +111,39 @@ function normalizeFaceMatchResult(data) {
   };
 }
 
-async function trySessionFlow(base, licence, liveScan, controller) {
-  const createUrl = `${base}/api/session-create`;
-  const createForm = new FormData();
-  const licencePart = makeImagePart(licence.imageBuffer, licence.mimeType, licence.filename);
-  createForm.append("license_image", licencePart, licence.filename);
-  createForm.append("licence", licencePart, licence.filename);
+function toBase64(buffer) {
+  if (typeof Buffer !== "undefined" && Buffer.isBuffer(buffer)) {
+    return buffer.toString("base64");
+  }
+  return Buffer.from(buffer).toString("base64");
+}
 
-  const createRes = await fetch(createUrl, {
-    method: "POST",
-    body: createForm,
-    signal: controller.signal,
-    headers: buildFaceAuthHeaders(),
-  });
+async function trySessionFlow(base, licence, liveScan, controller) {
+  const headers = buildFaceAuthHeaders();
+  const licenceB64 = toBase64(licence.imageBuffer);
+  const liveScanB64 = toBase64(liveScan.imageBuffer);
+  const createUrl = `${base}/api/session-create`;
+  const createSession = async (asBase64) => {
+    const createForm = new FormData();
+    if (asBase64) {
+      createForm.append("license_image", licenceB64);
+      createForm.append("licence", licenceB64);
+      createForm.append("license_image_base64", licenceB64);
+      createForm.append("license_mime_type", licence.mimeType || "image/jpeg");
+    } else {
+      const licencePart = makeImagePart(licence.imageBuffer, licence.mimeType, licence.filename);
+      createForm.append("license_image", licencePart, licence.filename);
+      createForm.append("licence", licencePart, licence.filename);
+    }
+    return fetch(createUrl, {
+      method: "POST",
+      body: createForm,
+      signal: controller.signal,
+      headers,
+    });
+  };
+
+  const createRes = await createSession(false);
   if (createRes.status === 404 || createRes.status === 405) {
     await createRes.text();
     return null;
@@ -131,37 +156,85 @@ async function trySessionFlow(base, licence, liveScan, controller) {
   }
   if (!createRes.ok) {
     const text = await createRes.text();
+    if (
+      createRes.status === 500 &&
+      text.includes("Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN")
+    ) {
+      throw new Error(
+        "Face validator is missing session storage configuration. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in the ai-face-recognition Vercel project."
+      );
+    }
     throw new Error(`Face session-create returned ${createRes.status}: ${text.slice(0, 200)}`);
   }
   const created = await createRes.json();
-  const sessionId =
+  let sessionId =
     created?.session_id || created?.sessionId || created?.id || created?.data?.session_id;
   if (!sessionId) {
     throw new Error("Face session-create response missing session_id");
   }
 
   const verifyUrl = `${base}/api/session-verify`;
-  const verifyForm = new FormData();
-  const liveScanPart = makeImagePart(liveScan.imageBuffer, liveScan.mimeType, liveScan.filename);
-  verifyForm.append("session_id", String(sessionId));
-  verifyForm.append("selfie_image", liveScanPart, liveScan.filename);
-  verifyForm.append("liveScan", liveScanPart, liveScan.filename);
-  verifyForm.append("selfie", liveScanPart, liveScan.filename);
-  verifyForm.append("image", liveScanPart, liveScan.filename);
+  const verifySession = async (sid, asBase64) => {
+    const verifyForm = new FormData();
+    verifyForm.append("session_id", String(sid));
+    if (asBase64) {
+      verifyForm.append("selfie_image", liveScanB64);
+      verifyForm.append("selfie_image_base64", liveScanB64);
+      verifyForm.append("selfie_mime_type", liveScan.mimeType || "image/jpeg");
+      verifyForm.append("liveScan", liveScanB64);
+      verifyForm.append("selfie", liveScanB64);
+      verifyForm.append("image", liveScanB64);
+    } else {
+      const liveScanPart = makeImagePart(liveScan.imageBuffer, liveScan.mimeType, liveScan.filename);
+      verifyForm.append("selfie_image", liveScanPart, liveScan.filename);
+      verifyForm.append("liveScan", liveScanPart, liveScan.filename);
+      verifyForm.append("selfie", liveScanPart, liveScan.filename);
+      verifyForm.append("image", liveScanPart, liveScan.filename);
+    }
+    return fetch(verifyUrl, {
+      method: "POST",
+      body: verifyForm,
+      signal: controller.signal,
+      headers,
+    });
+  };
 
-  const verifyRes = await fetch(verifyUrl, {
-    method: "POST",
-    body: verifyForm,
-    signal: controller.signal,
-    headers: buildFaceAuthHeaders(),
-  });
+  let verifyRes = await verifySession(sessionId, false);
   if (verifyRes.status === 404 || verifyRes.status === 405) {
     const text = await verifyRes.text();
     throw new Error(`Face session-verify endpoint unavailable: ${text.slice(0, 200)}`);
   }
   if (!verifyRes.ok) {
     const text = await verifyRes.text();
-    throw new Error(`Face session-verify returned ${verifyRes.status}: ${text.slice(0, 200)}`);
+    // Some session backends expect base64 fields (not binary files).
+    if (
+      verifyRes.status >= 500 &&
+      text.toLowerCase().includes("atob() called with invalid base64")
+    ) {
+      const createResB64 = await createSession(true);
+      if (!createResB64.ok) {
+        const textCreateB64 = await createResB64.text();
+        throw new Error(
+          `Face session-create (base64 retry) returned ${createResB64.status}: ${textCreateB64.slice(0, 200)}`
+        );
+      }
+      const createdB64 = await createResB64.json();
+      sessionId =
+        createdB64?.session_id ||
+        createdB64?.sessionId ||
+        createdB64?.id ||
+        createdB64?.data?.session_id;
+      if (!sessionId) throw new Error("Face session-create (base64 retry) missing session_id");
+      verifyRes = await verifySession(sessionId, true);
+      if (!verifyRes.ok) {
+        const textVerifyB64 = await verifyRes.text();
+        throw new Error(
+          `Face session-verify (base64 retry) returned ${verifyRes.status}: ${textVerifyB64.slice(0, 200)}`
+        );
+      }
+    } else {
+      throw new Error(`Face session-verify returned ${verifyRes.status}: ${text.slice(0, 200)}`);
+    }
   }
   const verified = await verifyRes.json();
   return normalizeFaceMatchResult(verified);
@@ -218,9 +291,18 @@ export async function verifyIdentityFaceMatch(licence, liveScan) {
       return normalizeFaceMatchResult(data);
     }
 
-    const sessionFlowResult = await trySessionFlow(base, licence, liveScan, controller);
-    if (sessionFlowResult) return sessionFlowResult;
+    if (USE_SESSION_FLOW_FALLBACK) {
+      const sessionFlowResult = await trySessionFlow(base, licence, liveScan, controller);
+      if (sessionFlowResult) return sessionFlowResult;
+    }
 
+    if (!USE_SESSION_FLOW_FALLBACK) {
+      throw new Error(
+        `Face match endpoint not found on ${base} (tried: ${paths.join(
+          ", "
+        )}). Session flow fallback is disabled (no Upstash mode).`
+      );
+    }
     throw new Error(`Face match endpoint not found on ${base} (tried: ${paths.join(", ")})`);
   } catch (err) {
     if (err?.name === "AbortError") {
