@@ -26,8 +26,19 @@ function generateJoinCode() {
  * @returns {Promise<Object|null>} Company or null
  */
 export async function getCompanyById(companyId) {
-  const tenant = await getTenantPrisma(companyId);
-  return tenant.company.findUnique({ where: { id: companyId }, include: { _count: { select: { members: true, cars: true } } } });
+  try {
+    const tenant = await getTenantPrisma(companyId);
+    return await tenant.company.findUnique({
+      where: { id: companyId },
+      include: { _count: { select: { members: true, cars: true } } },
+    });
+  } catch {
+    // Fallback to control-plane company so auth/session still works while tenant provisioning is pending/failed.
+    return prisma.company.findUnique({
+      where: { id: companyId },
+      include: { _count: { select: { members: true, cars: true } } },
+    });
+  }
 }
 
 /**
