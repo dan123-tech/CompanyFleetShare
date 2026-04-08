@@ -719,7 +719,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
               </div>
               <p className="text-sm text-slate-500 mb-2">
                 This step is completed on your phone. Scan the QR code above or use the email link to open the mobile camera page and capture your face photo.
-              )}
+              </p>
               {identityNotice && (
                 <div
                   className={`mt-4 rounded-xl px-4 py-3 text-sm ${
