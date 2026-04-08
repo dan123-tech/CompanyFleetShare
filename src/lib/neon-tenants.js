@@ -40,6 +40,7 @@ export async function provisionNeonTenant({ companyId, companyName }) {
   const rootBranchId = process.env.NEON_ROOT_BRANCH_ID?.trim() || "br-main";
   const branchName = `tenant-${companyId}`;
   const databaseName = normalizeDatabaseName(companyName || companyId);
+  const roleName = required("NEON_ROLE_NAME");
 
   const branch = await neonFetch(`/projects/${projectId}/branches`, {
     method: "POST",
@@ -54,11 +55,13 @@ export async function provisionNeonTenant({ companyId, companyName }) {
   await neonFetch(`/projects/${projectId}/branches/${branch.branch.id}/databases`, {
     method: "POST",
     body: JSON.stringify({
-      database: { name: databaseName },
+      database: {
+        name: databaseName,
+        owner_name: roleName,
+      },
     }),
   });
 
-  const roleName = required("NEON_ROLE_NAME");
   const conn = await neonFetch(
     `/projects/${projectId}/connection_uri?database_name=${encodeURIComponent(databaseName)}&role_name=${encodeURIComponent(roleName)}&branch_id=${encodeURIComponent(branch.branch.id)}`
   );

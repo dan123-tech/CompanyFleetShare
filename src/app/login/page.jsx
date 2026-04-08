@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { apiLogin, apiVerifyMfaLogin } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nProvider";
 import LanguageCurrencySwitcher from "@/components/LanguageCurrencySwitcher";
@@ -22,6 +22,7 @@ export default function LoginPage() {
   const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [mfaStep, setMfaStep] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [mfaCode, setMfaCode] = useState("");
@@ -193,27 +194,37 @@ export default function LoginPage() {
                     {t("login.password")}
                   </label>
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl outline-none transition-all duration-150"
-                  style={{
-                    border: "1px solid rgba(15,23,42,0.14)",
-                    color: "var(--text)",
-                    background: "#fff",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--primary)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-ring)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(15,23,42,0.14)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3.5 pr-11 py-2.5 text-sm rounded-xl outline-none transition-all duration-150"
+                    style={{
+                      border: "1px solid rgba(15,23,42,0.14)",
+                      color: "var(--text)",
+                      background: "#fff",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "var(--primary)";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-ring)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(15,23,42,0.14)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute inset-y-0 right-0 px-3 text-slate-500 hover:text-slate-700"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <button

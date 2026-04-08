@@ -225,6 +225,20 @@ export async function apiUpdateCompanyCurrent(payload) {
   return data;
 }
 
+export async function apiAiValidationConfigGet() {
+  const res = await fetch("/api/companies/current/ai-validation", getOpts("GET"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to load AI validation config");
+  return data;
+}
+
+export async function apiAiValidationConfigPatch(payload) {
+  const res = await fetch("/api/companies/current/ai-validation", getOpts("PATCH", payload));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to update AI validation config");
+  return data;
+}
+
 export async function apiCars(status) {
   const url = status ? `/api/cars?status=${encodeURIComponent(status)}` : "/api/cars";
   const res = await fetch(url, getOpts("GET"));

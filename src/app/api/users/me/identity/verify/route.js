@@ -8,6 +8,8 @@ import { verifyIdentityFaceMatch } from "@/lib/identity-verification";
 import { setUserIdentityStatus } from "@/lib/users";
 import { DRIVING_LICENCE_PRIVATE_PREFIX } from "@/lib/driving-licence-ref";
 import { resolveBlobReadWriteToken } from "@/lib/blob-env";
+import { getCompanyById } from "@/lib/companies";
+import { getAiValidationSettings } from "@/lib/ai-validation-settings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,6 +75,20 @@ export async function POST(request) {
   await setUserIdentityStatus(session.userId, "PENDING", { reason: "Verification started" });
 
   try {
+    const company = session.companyId ? await getCompanyById(session.companyId) : null;
+    const aiSettings = getAiValidationSettings(company);
+    if (!aiSettings.faceEnabled) {
+      await setUserIdentityStatus(session.userId, "PENDING_REVIEW", {
+        verifiedBy: "ADMIN",
+        reason: "AI face verification disabled for company",
+      });
+      return jsonResponse({
+        identityStatus: "PENDING_REVIEW",
+        aiVerified: false,
+        message: "AI face verification is disabled for this company. Pending admin review.",
+      });
+    }
+
     const licence = await bufferFromStored(
       user.drivingLicenceUrl,
       "/uploads/driving-licences/",

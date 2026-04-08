@@ -11,6 +11,8 @@ import { verifyDrivingLicenceWithAI } from "@/lib/ai-verification";
 import { persistDrivingLicenceImage } from "@/lib/driving-licence-storage";
 import { drivingLicenceUrlForApi } from "@/lib/driving-licence-ref";
 import { resolveBlobReadWriteToken, isEphemeralServerFilesystem } from "@/lib/blob-env";
+import { getCompanyById } from "@/lib/companies";
+import { getAiValidationSettings } from "@/lib/ai-validation-settings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -175,6 +177,17 @@ export async function POST(request) {
         "Upload saved but updating your profile failed. Check database connection.",
         500
       );
+    }
+
+    const company = session.companyId ? await getCompanyById(session.companyId) : null;
+    const aiSettings = getAiValidationSettings(company);
+    if (!aiSettings.drivingEnabled) {
+      return jsonResponse({
+        drivingLicenceUrl: drivingLicenceUrlForApi(url, session.userId),
+        drivingLicenceStatus: "PENDING",
+        aiVerified: false,
+        message: "AI driving-licence validation is disabled for this company. Pending admin review.",
+      });
     }
 
     // Send image to AI validator (optional — failures still return 200 with PENDING)
