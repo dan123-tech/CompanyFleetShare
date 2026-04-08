@@ -20,8 +20,15 @@ export async function POST(request) {
   if ("response" in out) return out.response;
   const parsed = bodySchema.safeParse(await request.json());
   if (!parsed.success) return errorResponse("Invalid input", 422);
-
-  const company = await createCompanyWithTenant(out.session.userId, parsed.data);
+  let company;
+  try {
+    company = await createCompanyWithTenant(out.session.userId, parsed.data);
+  } catch (err) {
+    const message =
+      err?.message?.slice?.(0, 400) ||
+      "Company was created in control-plane but tenant provisioning failed. Check Neon env vars and Vercel logs.";
+    return errorResponse(message, 500, { code: "TENANT_PROVISIONING_FAILED" });
+  }
 
   const payload = {
     company: {
