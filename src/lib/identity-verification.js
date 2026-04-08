@@ -121,7 +121,7 @@ export async function verifyIdentityFaceMatch(licence, liveScan) {
         signal: controller.signal,
         headers: buildFaceAuthHeaders(),
       });
-      if (res.status === 404) {
+      if (res.status === 404 || res.status === 405) {
         await res.text();
         continue;
       }
