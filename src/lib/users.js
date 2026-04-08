@@ -178,8 +178,7 @@ export async function listInvites(companyId) {
  * @returns {Promise<Object[]>}
  */
 export async function listCompanyMembers(companyId, status) {
-  const tenant = await getTenantPrisma(companyId);
-  return tenant.companyMember.findMany({
+  return prisma.companyMember.findMany({
     where: { companyId, ...(status ? { status } : {}) },
     include: {
       user: {
@@ -210,11 +209,20 @@ export async function listCompanyMembers(companyId, status) {
  * @param {string} role - "ADMIN" or "USER"
  */
 export async function updateMemberRole(companyId, userId, role) {
-  const tenant = await getTenantPrisma(companyId);
-  return tenant.companyMember.update({
+  const updated = await prisma.companyMember.update({
     where: { userId_companyId: { userId, companyId } },
     data: { role },
   });
+  try {
+    const tenant = await getTenantPrisma(companyId);
+    await tenant.companyMember.update({
+      where: { userId_companyId: { userId, companyId } },
+      data: { role },
+    });
+  } catch {
+    // Control-plane write already succeeded; tenant sync will self-heal on next sync path.
+  }
+  return updated;
 }
 
 /**
@@ -223,10 +231,18 @@ export async function updateMemberRole(companyId, userId, role) {
  * @param {string} userId
  */
 export async function removeMember(companyId, userId) {
-  const tenant = await getTenantPrisma(companyId);
-  return tenant.companyMember.delete({
+  const deleted = await prisma.companyMember.delete({
     where: { userId_companyId: { userId, companyId } },
   });
+  try {
+    const tenant = await getTenantPrisma(companyId);
+    await tenant.companyMember.deleteMany({
+      where: { userId, companyId },
+    });
+  } catch {
+    // Control-plane delete already succeeded; tenant sync will self-heal on next sync path.
+  }
+  return deleted;
 }
 
 /**

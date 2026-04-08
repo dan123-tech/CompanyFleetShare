@@ -9,7 +9,13 @@ import {
 
 export default function MobileCapturePage() {
   return (
-    <Suspense fallback={<main className="min-h-screen flex items-center justify-center"><p className="text-slate-600">Loading verification session…</p></main>}>
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center">
+          <p className="text-slate-600">Loading verification session…</p>
+        </main>
+      }
+    >
       <MobileCapturePageInner />
     </Suspense>
   );
@@ -17,7 +23,10 @@ export default function MobileCapturePage() {
 
 function MobileCapturePageInner() {
   const searchParams = useSearchParams();
-  const token = useMemo(() => String(searchParams.get("token") || "").trim(), [searchParams]);
+  const token = useMemo(
+    () => String(searchParams.get("token") || "").trim(),
+    [searchParams]
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sessionInfo, setSessionInfo] = useState(null);
@@ -67,7 +76,11 @@ function MobileCapturePageInner() {
         throw new Error("Camera is not supported in this browser.");
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
         audio: false,
       });
       streamRef.current = stream;
@@ -92,20 +105,31 @@ function MobileCapturePageInner() {
   async function captureFrame() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+    if (
+      !video ||
+      !canvas ||
+      video.readyState < 2 ||
+      !video.videoWidth ||
+      !video.videoHeight
+    ) {
       setError("Camera is starting. Try capture again in 1-2 seconds.");
       return;
     }
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.92)
+    );
     if (!blob) {
       setError("Failed to capture image.");
       return;
     }
-    const file = new File([blob], `mobile-selfie-${Date.now()}.jpg`, { type: "image/jpeg" });
+    const file = new File([blob], `mobile-selfie-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
     if (captureUrl) URL.revokeObjectURL(captureUrl);
     setCaptureUrl(URL.createObjectURL(file));
     setCaptureFile(file);
@@ -127,12 +151,25 @@ function MobileCapturePageInner() {
   }
 
   if (loading) {
-    return <main className="min-h-screen flex items-center justify-center"><p className="text-slate-600">Loading verification session…</p></main>;
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-slate-600">Loading verification session…</p>
+      </main>
+    );
   }
 
   if (error && !sessionInfo) {
-    return <main className="min-h-screen flex items-center justify-center p-6"><p className="text-red-700 text-center">{error}</p></main>;
+    return (
+      <main className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-red-700 text-center">{error}</p>
+      </main>
+    );
   }
+
+  // Oval dimensions in vmin units — responsive on all devices
+  const ovalW = 62; // vmin (width)
+  const ovalH = 78; // vmin (height)
+  const ovalCY = 44; // % from top
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 p-4">
@@ -140,56 +177,211 @@ function MobileCapturePageInner() {
         <h1 className="text-xl font-bold">Verify your identity</h1>
         <p className="text-sm text-slate-300 mt-1">
           {sessionInfo?.userName ? `Hi ${sessionInfo.userName}, ` : ""}
-          center your face in the circle, then take a clear selfie.
+          center your face in the oval, then take a clear selfie.
         </p>
         {sessionInfo?.expiresAt && (
-          <p className="text-xs text-slate-400 mt-1">Link expires: {new Date(sessionInfo.expiresAt).toLocaleString()}</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Link expires:{" "}
+            {new Date(sessionInfo.expiresAt).toLocaleString()}
+          </p>
         )}
 
+        {/* ── CAMERA FULLSCREEN OVERLAY ── */}
         {cameraReady && (
-          <div className="fixed inset-0 z-[120] bg-black">
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 120,
+              background: "#000",
+            }}
+          >
+            {/* Sharp video — fills entire screen */}
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
             />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="w-72 h-72 rounded-full border-4 border-white/95 shadow-[0_0_18px_rgba(255,255,255,0.55)]" />
+
+            {/*
+              SVG overlay:
+              - A <mask> cuts an oval hole so the blurred foreignObject
+                does NOT cover the oval area → sharp video shows through
+              - A glowing <ellipse> border draws the oval ring on top
+            */}
+            <svg
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+              }}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                {/*
+                  Mask:
+                    white rect  → show blurred overlay
+                    black ellipse → hide blurred overlay (reveal sharp video)
+                */}
+                <mask id="oval-mask">
+                  <rect width="100%" height="100%" fill="white" />
+                  <ellipse
+                    cx="50%"
+                    cy={`${ovalCY}%`}
+                    rx={`${ovalW / 2}vmin`}
+                    ry={`${ovalH / 2}vmin`}
+                    fill="black"
+                  />
+                </mask>
+              </defs>
+
+              {/* Blurred + darkened overlay, with oval hole cut out */}
+              <foreignObject
+                width="100%"
+                height="100%"
+                mask="url(#oval-mask)"
+              >
+                <div
+                  xmlns="http://www.w3.org/1999/xhtml"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backdropFilter: "blur(20px) brightness(0.4)",
+                    WebkitBackdropFilter: "blur(20px) brightness(0.4)",
+                  }}
+                />
+              </foreignObject>
+
+              {/* Glowing oval border ring */}
+              <ellipse
+                cx="50%"
+                cy={`${ovalCY}%`}
+                rx={`${ovalW / 2}vmin`}
+                ry={`${ovalH / 2}vmin`}
+                fill="none"
+                stroke="rgba(255,255,255,0.92)"
+                strokeWidth="3"
+                style={{
+                  filter:
+                    "drop-shadow(0 0 8px rgba(255,255,255,0.7)) drop-shadow(0 0 20px rgba(255,255,255,0.35))",
+                }}
+              />
+            </svg>
+
+            {/* Instruction label */}
+            <div
+              style={{
+                pointerEvents: "none",
+                position: "absolute",
+                top: "6%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                padding: "6px 18px",
+                borderRadius: 999,
+                background: "rgba(0,0,0,0.55)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                fontSize: 13,
+                color: "#fff",
+                whiteSpace: "nowrap",
+                zIndex: 10,
+              }}
+            >
+              Keep your face inside the oval
             </div>
-            <div className="pointer-events-none absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/55 text-xs text-white">
-              Keep your face inside the circle
-            </div>
-            <div className="absolute bottom-6 inset-x-0 px-4">
-              <div className="mx-auto max-w-md rounded-2xl bg-black/55 backdrop-blur p-3 flex flex-wrap gap-2 justify-center">
+
+            {/* Action buttons */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 24,
+                left: 0,
+                right: 0,
+                padding: "0 16px",
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: 420,
+                  margin: "0 auto",
+                  borderRadius: 18,
+                  background: "rgba(0,0,0,0.6)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 10,
+                  justifyContent: "center",
+                }}
+              >
                 <button
                   type="button"
                   onClick={captureFrame}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 text-white font-semibold"
+                  style={{
+                    padding: "11px 24px",
+                    borderRadius: 12,
+                    background: "#10b981",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    border: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 12px rgba(16,185,129,0.4)",
+                  }}
                 >
-                  Capture photo
+                  📸 Capture photo
                 </button>
                 <button
                   type="button"
                   onClick={stopCamera}
-                  className="px-4 py-2 rounded-xl bg-white/15 text-slate-100 font-semibold"
+                  style={{
+                    padding: "11px 24px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.15)",
+                    color: "#f1f5f9",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    cursor: "pointer",
+                  }}
                 >
-                  Stop camera
+                  Cancel
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Hidden canvas for frame capture */}
         <canvas ref={canvasRef} className="hidden" />
 
+        {/* Captured photo preview */}
         {captureUrl && (
           <div className="mt-4">
-            <p className="text-sm font-medium mb-2 text-slate-200">Captured photo</p>
-            <img src={captureUrl} alt="Captured selfie" className="rounded-2xl border border-white/15 bg-black/20 w-full h-auto max-h-[26rem] object-contain" />
+            <p className="text-sm font-medium mb-2 text-slate-200">
+              Captured photo
+            </p>
+            <img
+              src={captureUrl}
+              alt="Captured selfie"
+              className="rounded-2xl border border-white/15 bg-black/20 w-full h-auto max-h-[26rem] object-contain"
+            />
           </div>
         )}
 
+        {/* Bottom action buttons */}
         <div className="mt-4 flex flex-wrap gap-2">
           {!cameraReady && (
             <button
@@ -201,7 +393,6 @@ function MobileCapturePageInner() {
               {cameraOpening ? "Opening camera..." : "Start camera"}
             </button>
           )}
-          {cameraReady && null}
           <button
             type="button"
             onClick={submitCapture}
@@ -212,15 +403,23 @@ function MobileCapturePageInner() {
           </button>
         </div>
 
+        {/* Error message */}
         {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
 
+        {/* Verification result */}
         {result?.identityStatus && (
           <div className="mt-4 rounded-xl border border-white/15 bg-white/5 p-3">
-            <p className="text-sm font-semibold">Result: {result.identityStatus}</p>
+            <p className="text-sm font-semibold">
+              Result: {result.identityStatus}
+            </p>
             {typeof result.identityScore === "number" && (
-              <p className="text-xs text-slate-300 mt-1">Score: {result.identityScore.toFixed(3)}</p>
+              <p className="text-xs text-slate-300 mt-1">
+                Score: {result.identityScore.toFixed(3)}
+              </p>
             )}
-            {result.message && <p className="text-xs text-slate-300 mt-1">{result.message}</p>}
+            {result.message && (
+              <p className="text-xs text-slate-300 mt-1">{result.message}</p>
+            )}
           </div>
         )}
       </div>

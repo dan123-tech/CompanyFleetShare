@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { prisma as controlPrisma } from "@/lib/db";
-import { ensureNeonTenantDatabase } from "@/lib/neon-tenants";
+import { ensureNeonTenantDatabase, provisionNeonTenant } from "@/lib/neon-tenants";
 
 const tenantClients = new Map();
 const MAX_TENANT_CLIENTS = 20;
@@ -29,6 +29,25 @@ function isUsableDatabaseUrl(url) {
   return v.startsWith("postgres://") || v.startsWith("postgresql://");
 }
 
+function parseDbIdentity(url) {
+  try {
+    const u = new URL(url);
+    const db = (u.pathname || "").replace(/^\/+/, "");
+    if (!u.hostname || !db) return null;
+    return { host: u.hostname.toLowerCase(), db: db.toLowerCase() };
+  } catch {
+    return null;
+  }
+}
+
+function isMappedToControlPlaneDatabase(url) {
+  const controlUrl = process.env.DATABASE_URL;
+  if (!controlUrl || !isUsableDatabaseUrl(controlUrl) || !isUsableDatabaseUrl(url)) return false;
+  const a = parseDbIdentity(controlUrl);
+  const b = parseDbIdentity(url);
+  return Boolean(a && b && a.host === b.host && a.db === b.db);
+}
+
 function touchClient(companyId, client) {
   if (tenantClients.has(companyId)) tenantClients.delete(companyId);
   tenantClients.set(companyId, client);
@@ -38,6 +57,73 @@ function touchClient(companyId, client) {
     tenantClients.delete(oldest);
     oldestClient?.$disconnect?.().catch(() => {});
   }
+}
+
+async function seedTenantFromControlPlane(client, companyId) {
+  const company = await controlPrisma.company.findUnique({
+    where: { id: companyId },
+    include: {
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              password: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!company) throw new Error("Company not found for tenant provisioning");
+
+  await client.$transaction(async (tx) => {
+    await tx.company.upsert({
+      where: { id: company.id },
+      update: {
+        name: company.name,
+        domain: company.domain,
+        joinCode: company.joinCode,
+      },
+      create: {
+        id: company.id,
+        name: company.name,
+        domain: company.domain,
+        joinCode: company.joinCode,
+      },
+    });
+
+    for (const m of company.members || []) {
+      if (!m?.user?.id) continue;
+      await tx.user.upsert({
+        where: { id: m.user.id },
+        update: {
+          email: m.user.email,
+          password: m.user.password,
+          name: m.user.name,
+        },
+        create: {
+          id: m.user.id,
+          email: m.user.email,
+          password: m.user.password,
+          name: m.user.name,
+        },
+      });
+      await tx.companyMember.upsert({
+        where: { userId_companyId: { userId: m.user.id, companyId: company.id } },
+        update: { role: m.role, status: m.status },
+        create: {
+          id: `${company.id}_${m.user.id}`,
+          userId: m.user.id,
+          companyId: company.id,
+          role: m.role,
+          status: m.status,
+        },
+      });
+    }
+  });
 }
 
 async function bootstrapTenantSchema(client) {
@@ -246,6 +332,117 @@ CREATE TABLE IF NOT EXISTS "MobileCaptureSession" (
 `);
 }
 
+async function autoProvisionMissingTenant(companyId) {
+  const existing = await controlPrisma.companyTenant.findUnique({ where: { companyId } });
+  if (existing) return existing;
+
+  const company = await controlPrisma.company.findUnique({
+    where: { id: companyId },
+    select: { id: true, name: true },
+  });
+  if (!company) {
+    throw new Error("Company tenant database is not configured yet");
+  }
+
+  await controlPrisma.companyTenant.upsert({
+    where: { companyId },
+    update: {
+      provisioningStatus: "PROVISIONING",
+      provisioningError: null,
+    },
+    create: {
+      companyId,
+      provider: "neon",
+      databaseUrl: "pending://provisioning",
+      provisioningStatus: "PROVISIONING",
+    },
+  });
+
+  try {
+    const provisioned = await provisionNeonTenant({
+      companyId: company.id,
+      companyName: company.name,
+    });
+    await controlPrisma.companyTenant.update({
+      where: { companyId },
+      data: {
+        ...provisioned,
+        provisioningStatus: "READY",
+        provisioningError: null,
+      },
+    });
+
+    const tempClient = createTenantClient(provisioned.databaseUrl);
+    try {
+      await bootstrapTenantSchema(tempClient);
+      await ensureTenantSchemaCompatibility(tempClient);
+      await seedTenantFromControlPlane(tempClient, companyId);
+    } finally {
+      await tempClient.$disconnect().catch(() => {});
+    }
+    return controlPrisma.companyTenant.findUnique({ where: { companyId } });
+  } catch (err) {
+    await controlPrisma.companyTenant.update({
+      where: { companyId },
+      data: {
+        provisioningStatus: "FAILED",
+        provisioningError: err?.message?.slice?.(0, 1000) || "Tenant provisioning failed",
+      },
+    });
+    throw err;
+  }
+}
+
+async function reprovisionDedicatedTenant(companyId) {
+  const company = await controlPrisma.company.findUnique({
+    where: { id: companyId },
+    select: { id: true, name: true },
+  });
+  if (!company) {
+    throw new Error("Company tenant database is not configured yet");
+  }
+  await controlPrisma.companyTenant.update({
+    where: { companyId },
+    data: {
+      provisioningStatus: "PROVISIONING",
+      provisioningError: null,
+    },
+  });
+  try {
+    const provisioned = await provisionNeonTenant({
+      companyId: company.id,
+      companyName: company.name,
+    });
+    await controlPrisma.companyTenant.update({
+      where: { companyId },
+      data: {
+        ...provisioned,
+        provisioningStatus: "READY",
+        provisioningError: null,
+      },
+    });
+
+    const tempClient = createTenantClient(provisioned.databaseUrl);
+    try {
+      await bootstrapTenantSchema(tempClient);
+      await ensureTenantSchemaCompatibility(tempClient);
+      await seedTenantFromControlPlane(tempClient, companyId);
+    } finally {
+      await tempClient.$disconnect().catch(() => {});
+    }
+    return controlPrisma.companyTenant.findUnique({ where: { companyId } });
+  } catch (err) {
+    await controlPrisma.companyTenant.update({
+      where: { companyId },
+      data: {
+        provisioningStatus: "FAILED",
+        provisioningError: err?.message?.slice?.(0, 1000) || "Tenant reprovisioning failed",
+      },
+    });
+    throw err;
+  }
+}
+
 export async function ensureTenantSchema(companyId) {
   if (!companyId) throw new Error("companyId is required");
   if (tenantSchemaReady.has(companyId)) return;
@@ -265,9 +462,14 @@ export async function ensureTenantSchema(companyId) {
 
 export async function getTenantConfig(companyId) {
   if (!companyId) throw new Error("companyId is required");
-  const cfg = await controlPrisma.companyTenant.findUnique({ where: { companyId } });
-  if (!cfg) throw new Error("Company tenant database is not configured yet");
+  let cfg = await controlPrisma.companyTenant.findUnique({ where: { companyId } });
+  if (!cfg) {
+    cfg = await autoProvisionMissingTenant(companyId);
+  }
   if (cfg.provisioningStatus === "READY" && isUsableDatabaseUrl(cfg.databaseUrl)) {
+    if (cfg.provider === "neon" && isMappedToControlPlaneDatabase(cfg.databaseUrl)) {
+      cfg = await reprovisionDedicatedTenant(companyId);
+    }
     return cfg;
   }
 
