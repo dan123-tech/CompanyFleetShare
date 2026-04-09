@@ -98,7 +98,6 @@ export async function sendIncidentAdminEmail(companyId, { incidentId }) {
     incident.location ? `Location: ${incident.location}` : null,
     incident.description ? `Description:\n${incident.description}` : null,
     "",
-    `Incident ID: ${incident.id}`,
     `Attachments: ${attachments.length}`,
     ...attachments.map((a) => `- ${a.filename} (${a.sizeBytes} bytes)`),
   ]
@@ -139,7 +138,6 @@ export async function sendIncidentAdminEmail(companyId, { incidentId }) {
     }
     <p style="margin:0 0 8px;"><strong style="color:#0f172a;">Attachments</strong></p>
     ${listHtml}
-    <p style="margin:14px 0 0;color:#64748b;font-size:12px;">Incident ID: ${escapeEmailText(incident.id)}</p>
   `.trim();
 
   const html = wrapBrandedEmailHtml({
