@@ -11,6 +11,7 @@ import com.company.carsharing.models.RegisterResponse;
 import com.company.carsharing.models.Member;
 import com.company.carsharing.models.Reservation;
 import com.company.carsharing.models.SessionResponse;
+import com.company.carsharing.models.IncidentReport;
 
 import java.util.List;
 import java.util.Map;
@@ -106,5 +107,21 @@ public interface ApiService {
         @Query("page") int page,
         @Query("limit") int limit,
         @Query("entityType") String entityType
+    );
+
+    // Incidents
+    @GET("api/incidents")
+    Call<List<IncidentReport>> getIncidents();
+
+    @Multipart
+    @POST("api/incidents")
+    Call<Map<String, Object>> createIncident(
+            @Part("carId") RequestBody carId,
+            @Part("title") RequestBody title,
+            @Part("severity") RequestBody severity,
+            @Part("occurredAt") RequestBody occurredAt,
+            @Part("location") RequestBody location,
+            @Part("description") RequestBody description,
+            @Part List<MultipartBody.Part> files
     );
 }

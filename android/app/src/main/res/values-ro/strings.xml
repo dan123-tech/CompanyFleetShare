@@ -83,6 +83,7 @@
     <string name="nav_fleet_calendar">Calendar flotă</string>
     <string name="nav_available_cars">Mașini disponibile</string>
     <string name="nav_my_reservations">Rezervările mele</string>
+    <string name="nav_incidents">Incidente</string>
     <string name="nav_booking_calendar">Calendar rezervări</string>
     <string name="nav_driving_licence">Profil / permis</string>
 
@@ -176,6 +177,23 @@
     <string name="failed_load_available_cars">Încărcarea mașinilor disponibile a eșuat</string>
     <string name="driving_licence_required">Permisul trebuie aprobat pentru a rezerva</string>
     <string name="check_connection">verifică conexiunea</string>
+
+    <!-- Incidente -->
+    <string name="incidents_title">Incidente</string>
+    <string name="incidents_form_hint">Raportează un accident, zgârietură, daună sau orice problemă. Adaugă poze/documente și trimite.</string>
+    <string name="incidents_vehicle">Vehicul</string>
+    <string name="incidents_gravity">Gravitate (A/B/C)</string>
+    <string name="incidents_title_field">Titlu</string>
+    <string name="incidents_location">Locație (opțional)</string>
+    <string name="incidents_description">Descriere (opțional)</string>
+    <string name="incidents_add_files">Adaugă fișiere</string>
+    <string name="incidents_no_files">Niciun fișier selectat</string>
+    <string name="incidents_files_count">%1$d fișier(e) selectat(e)</string>
+    <string name="incidents_submit">Trimite incident</string>
+    <string name="incidents_my_reports">Incidentele mele</string>
+    <string name="incidents_empty">Nu ai raportat incidente încă.</string>
+    <string name="incidents_require_car_title">Selectează o mașină și introdu un titlu.</string>
+    <string name="incidents_submitted">Incident trimis.</string>
 
     <string name="dialog_car_label">Mașină</string>
     <string name="dialog_schedule_title">Început și sfârșit (opțional)</string>

@@ -84,6 +84,7 @@
     <string name="nav_fleet_calendar">Fleet calendar</string>
     <string name="nav_available_cars">Available Cars</string>
     <string name="nav_my_reservations">My Reservations</string>
+    <string name="nav_incidents">Incidents</string>
     <string name="nav_booking_calendar">Booking calendar</string>
     <string name="nav_driving_licence">Profile / Driving licence</string>
 
@@ -187,6 +188,23 @@
     <string name="failed_load_available_cars">Failed to load available cars</string>
     <string name="driving_licence_required">Driving licence must be approved to reserve</string>
     <string name="check_connection">check connection</string>
+
+    <!-- Incidents -->
+    <string name="incidents_title">Incidents</string>
+    <string name="incidents_form_hint">Report an accident, scratch, damage, or any issue. Add photos/documents and submit.</string>
+    <string name="incidents_vehicle">Vehicle</string>
+    <string name="incidents_gravity">Gravity (A/B/C)</string>
+    <string name="incidents_title_field">Title</string>
+    <string name="incidents_location">Location (optional)</string>
+    <string name="incidents_description">Description (optional)</string>
+    <string name="incidents_add_files">Add files</string>
+    <string name="incidents_no_files">No files selected</string>
+    <string name="incidents_files_count">%1$d file(s) selected</string>
+    <string name="incidents_submit">Submit incident</string>
+    <string name="incidents_my_reports">My incident reports</string>
+    <string name="incidents_empty">No incidents reported yet.</string>
+    <string name="incidents_require_car_title">Select a car and enter a title.</string>
+    <string name="incidents_submitted">Incident submitted.</string>
 
     <!-- Create reservation dialog -->
     <string name="dialog_car_label">Car</string>
