@@ -253,6 +253,10 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   const [itpExpiresAt, setItpExpiresAt] = useState("");
   const [itpSaving, setItpSaving] = useState(false);
   const [itpNotice, setItpNotice] = useState(null);
+  const [showItpForm, setShowItpForm] = useState(false);
+  const [showServiceForm, setShowServiceForm] = useState(false);
+  const [itpFilterStatus, setItpFilterStatus] = useState("");
+  const [itpFilterCarId, setItpFilterCarId] = useState("");
   const [maintFilterCarId, setMaintFilterCarId] = useState("");
   const [maintFilterDateFrom, setMaintFilterDateFrom] = useState("");
   const [maintFilterDateTo, setMaintFilterDateTo] = useState("");
@@ -2438,6 +2442,44 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
 
         {section === "maintenance" && (
           <section className="w-full min-w-0 space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-3">Maintenance</h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowItpForm((v) => !v);
+                    setShowServiceForm(false);
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)]"
+                >
+                  {showItpForm ? "Close ITP form" : "Add / edit ITP"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      document.getElementById("itp-overview-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    } catch {}
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                >
+                  View ITP table
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowServiceForm((v) => !v);
+                    setShowItpForm(false);
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-[#1E293B] text-white hover:bg-[#334155]"
+                >
+                  {showServiceForm ? "Close service form" : "Add service record"}
+                </button>
+              </div>
+            </div>
+
+            {showItpForm && (
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 max-w-3xl">
               <h3 className="text-sm font-semibold text-slate-800 mb-1">ITP (technical inspection)</h3>
               <p className="text-xs text-slate-500 mb-3">
@@ -2521,81 +2563,13 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 )}
               </form>
             </div>
+            )}
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">ITP overview (all cars)</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px]">
-                  <thead>
-                    <tr className="bg-slate-50 text-left">
-                      <th className="py-3 px-4 font-semibold text-slate-700">Car</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700">ITP expiry</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700">Last notified</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700">Quick edit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-800">
-                    {cars
-                      .slice()
-                      .sort((a, b) => {
-                        const ax = a.itpExpiresAt ? new Date(a.itpExpiresAt).getTime() : Number.POSITIVE_INFINITY;
-                        const bx = b.itpExpiresAt ? new Date(b.itpExpiresAt).getTime() : Number.POSITIVE_INFINITY;
-                        if (ax === bx) return String(a.registrationNumber || "").localeCompare(String(b.registrationNumber || ""));
-                        return ax - bx;
-                      })
-                      .map((c) => {
-                        const exp = c.itpExpiresAt ? new Date(c.itpExpiresAt) : null;
-                        const expOk = exp && !Number.isNaN(exp.getTime());
-                        const days = expOk ? Math.ceil((exp.getTime() - Date.now()) / (24 * 60 * 60 * 1000)) : null;
-                        const badge =
-                          days == null
-                            ? "bg-slate-100 text-slate-800"
-                            : days < 0
-                              ? "bg-red-100 text-red-800"
-                              : days <= 30
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-emerald-100 text-emerald-800";
-                        const label =
-                          days == null ? "Not set" : days < 0 ? `Expired ${Math.abs(days)} day(s) ago` : `${days} day(s) left`;
-                        return (
-                          <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors">
-                            <td className="py-3 px-4 whitespace-nowrap">{c.brand} {c.registrationNumber}</td>
-                            <td className="py-3 px-4 whitespace-nowrap">
-                              {expOk ? exp.toLocaleDateString() : <span className="text-slate-400">—</span>}
-                            </td>
-                            <td className="py-3 px-4 whitespace-nowrap">
-                              <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${badge}`}>{label}</span>
-                            </td>
-                            <td className="py-3 px-4 whitespace-nowrap">
-                              {c.itpLastNotifiedAt ? new Date(c.itpLastNotifiedAt).toLocaleString() : <span className="text-slate-400">—</span>}
-                            </td>
-                            <td className="py-3 px-4 whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setItpCarId(c.id);
-                                  // Scroll to the ITP form card for convenience
-                                  try {
-                                    window.scrollTo({ top: 0, behavior: "smooth" });
-                                  } catch {}
-                                }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100"
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    {cars.length === 0 && !loading && (
-                      <tr><td colSpan={5} className="py-10 px-4 text-center text-slate-500">No cars</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {false && (
+              <div />
+            )}
 
+            {showServiceForm && (
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 max-w-3xl">
               <h3 className="text-sm font-semibold text-slate-800 mb-3">Add service record</h3>
               <form
@@ -2715,6 +2689,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 </div>
               </form>
             </div>
+            )}
 
             {!maintenanceLoading && maintenanceEvents.length > 0 && (
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
@@ -2767,6 +2742,53 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     />
                   </label>
                 </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-200/70">
+                  <p className="text-xs font-semibold text-slate-700">ITP filters</p>
+                  <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label className="block text-xs font-medium text-slate-600">
+                      Vehicle (ITP)
+                      <select
+                        value={itpFilterCarId}
+                        onChange={(e) => setItpFilterCarId(e.target.value)}
+                        className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                      >
+                        <option value="">All cars</option>
+                        {cars.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.brand} {c.registrationNumber}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block text-xs font-medium text-slate-600">
+                      ITP status
+                      <select
+                        value={itpFilterStatus}
+                        onChange={(e) => setItpFilterStatus(e.target.value)}
+                        className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                      >
+                        <option value="">All</option>
+                        <option value="not_set">Not set</option>
+                        <option value="expired">Expired</option>
+                        <option value="expiring_30">Expiring ≤ 30 days</option>
+                        <option value="ok">OK (&gt; 30 days)</option>
+                      </select>
+                    </label>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItpFilterCarId("");
+                          setItpFilterStatus("");
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      >
+                        Clear ITP filters
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -2814,6 +2836,8 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                       setMaintFilterDateFrom("");
                       setMaintFilterDateTo("");
                       setMaintFilterService("");
+                      setItpFilterCarId("");
+                      setItpFilterStatus("");
                     }}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
                   >
@@ -2978,6 +3002,99 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 </div>
               </div>
             )}
+
+            <div id="itp-overview-table" className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">ITP overview (all cars)</h3>
+              {(() => {
+                const now = Date.now();
+                const list = (cars || [])
+                  .filter((c) => (itpFilterCarId ? c.id === itpFilterCarId : true))
+                  .filter((c) => {
+                    const exp = c.itpExpiresAt ? new Date(c.itpExpiresAt) : null;
+                    const expOk = exp && !Number.isNaN(exp.getTime());
+                    const days = expOk ? Math.ceil((exp.getTime() - now) / (24 * 60 * 60 * 1000)) : null;
+                    if (!itpFilterStatus) return true;
+                    if (itpFilterStatus === "not_set") return days == null;
+                    if (itpFilterStatus === "expired") return days != null && days < 0;
+                    if (itpFilterStatus === "expiring_30") return days != null && days >= 0 && days <= 30;
+                    if (itpFilterStatus === "ok") return days != null && days > 30;
+                    return true;
+                  })
+                  .slice()
+                  .sort((a, b) => {
+                    const ax = a.itpExpiresAt ? new Date(a.itpExpiresAt).getTime() : Number.POSITIVE_INFINITY;
+                    const bx = b.itpExpiresAt ? new Date(b.itpExpiresAt).getTime() : Number.POSITIVE_INFINITY;
+                    if (ax === bx) return String(a.registrationNumber || "").localeCompare(String(b.registrationNumber || ""));
+                    return ax - bx;
+                  });
+
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px]">
+                      <thead>
+                        <tr className="bg-slate-50 text-left">
+                          <th className="py-3 px-4 font-semibold text-slate-700">Car</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">ITP expiry</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">Last notified</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">Quick edit</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-800">
+                        {list.map((c) => {
+                          const exp = c.itpExpiresAt ? new Date(c.itpExpiresAt) : null;
+                          const expOk = exp && !Number.isNaN(exp.getTime());
+                          const days = expOk ? Math.ceil((exp.getTime() - now) / (24 * 60 * 60 * 1000)) : null;
+                          const badge =
+                            days == null
+                              ? "bg-slate-100 text-slate-800"
+                              : days < 0
+                                ? "bg-red-100 text-red-800"
+                                : days <= 30
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-emerald-100 text-emerald-800";
+                          const label =
+                            days == null ? "Not set" : days < 0 ? `Expired ${Math.abs(days)} day(s) ago` : `${days} day(s) left`;
+                          return (
+                            <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors">
+                              <td className="py-3 px-4 whitespace-nowrap">{c.brand} {c.registrationNumber}</td>
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                {expOk ? exp.toLocaleDateString() : <span className="text-slate-400">—</span>}
+                              </td>
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${badge}`}>{label}</span>
+                              </td>
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                {c.itpLastNotifiedAt ? new Date(c.itpLastNotifiedAt).toLocaleString() : <span className="text-slate-400">—</span>}
+                              </td>
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setItpCarId(c.id);
+                                    setShowItpForm(true);
+                                    setShowServiceForm(false);
+                                    try {
+                                      window.scrollTo({ top: 0, behavior: "smooth" });
+                                    } catch {}
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100"
+                                >
+                                  Edit
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {list.length === 0 && (
+                          <tr><td colSpan={5} className="py-10 px-4 text-center text-slate-500">No cars match these ITP filters.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
 
             {maintenanceLoading ? (
               <p className="text-slate-500">Loading…</p>
