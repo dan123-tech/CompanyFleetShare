@@ -119,7 +119,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [calendarMsg, setCalendarMsg] = useState(null);
   const dlStatus = user?.drivingLicenceStatus ?? null;
   const identityStatus = user?.identityStatus ?? null;
-  const canReserve = dlStatus === "APPROVED" && identityStatus === "VERIFIED";
+  const canReserve = dlStatus === "APPROVED";
 
   async function load() {
     setLoading(true);
@@ -1078,7 +1078,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
             <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6">Available Cars</h2>
             {!canReserve && (
               <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-sm">
-                You need an approved driving licence and verified identity to reserve a car. Go to <button type="button" onClick={() => setSection("drivingLicence")} className="underline font-semibold">Driving licence</button> to complete both steps.
+                You need an approved driving licence to reserve a car. Go to <button type="button" onClick={() => setSection("drivingLicence")} className="underline font-semibold">Driving licence</button> to complete this step.
               </div>
             )}
             <div className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden overflow-x-auto">
