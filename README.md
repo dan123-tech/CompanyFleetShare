@@ -24,7 +24,8 @@ PostgreSQL-first Next.js app for company fleet booking, licence validation, and 
 - Driving licence upload and AI validation flow
 - Identity anti-impersonation flow (live scan + face match)
 - Reservation lifecycle (create, release, history, approvals)
-- Maintenance log + analytics exports
+- Maintenance log + ITP expiry tracking + analytics exports
+- Incident reporting (users can submit reports with photos/documents; admins can review)
 - i18n (EN/RO), mobile-friendly UI, API docs endpoint
 
 ## Quick Start (Local)
@@ -111,6 +112,7 @@ The current anti-impersonation implementation includes:
 | [`docs/DATABASE.md`](docs/DATABASE.md) | PostgreSQL/Neon connection details |
 | [`docs/FAVICON_AND_SEARCH.md`](docs/FAVICON_AND_SEARCH.md) | Favicon + search appearance notes |
 | [`docs/DEPLOY_CLOUDFLARE_VERCEL_NEON.md`](docs/DEPLOY_CLOUDFLARE_VERCEL_NEON.md) | Cloudflare + Vercel topology |
+| [`docs/ITP_AND_INCIDENTS.md`](docs/ITP_AND_INCIDENTS.md) | ITP expiry cron/auto-block + incident reporting/attachments |
 
 ## Related Repository
 

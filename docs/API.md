@@ -341,9 +341,77 @@ Get one car. Admin sees reservation history.
 
 Update car (admin only). Partial body allowed.
 
+**Notes**
+
+- You can update ITP expiry by sending `itpExpiresAt` as ISO datetime (or `null`).
+
 ### DELETE /api/cars/:id
 
 Delete car (admin only).
+
+---
+
+## Incidents
+
+### GET /api/incidents
+
+List incident reports.
+
+- **Admin**: returns all company incidents
+- **User**: returns only own incidents
+
+**Success (200)**
+
+Returns an array of incidents. Each incident includes `attachments` where each attachment has a clickable `url`.
+
+---
+
+### POST /api/incidents
+
+Create a new incident report (user).
+
+**Content type**: `multipart/form-data`
+
+**Fields**
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| carId | string | Yes | Car id |
+| title | string | Yes | Short summary |
+| occurredAt | string (ISO datetime) | No | When it happened |
+| location | string | No | Where it happened |
+| description | string | No | What happened |
+| files | file[] | No | Photos/documents (repeat `files` field) |
+
+**Success (201)**
+
+```json
+{ "ok": true, "id": "incident_id", "status": "SUBMITTED", "attachmentCount": 2 }
+```
+
+---
+
+### POST /api/incidents/:id/attachments
+
+Append more attachments to an existing incident (owner or admin).
+
+**Content type**: `multipart/form-data`
+
+**Fields**
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| files | file[] | Yes | Files to append (repeat `files` field) |
+
+**Success (200)**
+
+Returns `{ ok: true, added: number, attachments: [...] }`.
+
+---
+
+### PATCH /api/incidents/:id
+
+Admin-only. Update incident `status` and `adminNotes`.
 
 ---
 
@@ -410,3 +478,29 @@ Cancel, release, or extend. Body:
 
 Interactive API docs: **[/api-docs](/api-docs)**  
 OpenAPI spec: **GET /api/openapi**
+
+---
+
+## Cron
+
+### POST /api/cron/itp-expiry-reminders
+
+Email admins about upcoming/expired ITP dates and optionally auto-block cars with expired ITP.
+
+**Auth**
+
+- `Authorization: Bearer <CRON_SECRET>` (or `x-cron-secret`)
+
+**Success (200)**
+
+```json
+{
+  "ok": true,
+  "reminderDays": 30,
+  "emailedCompanies": 1,
+  "carsFlagged": 4,
+  "carsAutoBlocked": 1,
+  "autoBlock": true,
+  "errors": []
+}
+```

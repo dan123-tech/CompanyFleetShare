@@ -295,6 +295,8 @@ Company-owned vehicle.
 | registrationNumber | `text` | NO | — | |
 | km | `int4` | NO | `0` | Odometer |
 | status | `CarStatus` | NO | `AVAILABLE` | AVAILABLE / RESERVED / IN_MAINTENANCE |
+| itpExpiresAt | `timestamp(3)` | YES | — | ITP expiry date |
+| itpLastNotifiedAt | `timestamp(3)` | YES | — | Last reminder email timestamp |
 | createdAt | `timestamp(3)` | NO | `now()` | |
 | updatedAt | `timestamp(3)` | NO | `now()` | |
 
@@ -416,6 +418,17 @@ erDiagram
 ```
 
 **Legend:** PK = Primary key, UK = Unique, FK = Foreign key.
+
+---
+
+## 8. Incidents (new)
+
+Incident reporting adds two new tables:
+
+- **IncidentReport**: the incident metadata (car, driver, date/time, title, description, location, status, admin notes)
+- **IncidentAttachment**: files linked to an incident (photos, PDFs, Word docs, etc.)
+
+If you use tenant databases (one DB per company), those tables exist in each tenant DB.
 
 ---
 
