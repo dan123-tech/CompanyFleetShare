@@ -10,6 +10,7 @@ Download installers (from FleetShare /download)
     ./fleetshare-ai-validator-install.sh ..    # put folder next to current dir
 
   Windows (PowerShell):
+    Set-ExecutionPolicy -Scope Process Bypass -Force
     .\fleetshare-ai-validator-install.ps1
     .\fleetshare-ai-validator-install.ps1 -Parent ..   # sibling folder
 

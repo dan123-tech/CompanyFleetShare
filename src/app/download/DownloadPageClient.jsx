@@ -7,6 +7,46 @@ import { useI18n } from "@/i18n/I18nProvider";
 const COL = { base: "#0c1220", primary: "#185fa5", accent: "#f5a623" };
 
 const codeClass = "text-[11px] sm:text-xs font-mono rounded px-1 py-0.5 bg-white/10 text-white/85";
+const copyBtnClass =
+  "inline-flex items-center justify-center h-7 px-2.5 rounded-lg text-[11px] font-semibold border border-white/15 text-white/80 hover:border-white/25 hover:bg-white/5 transition-colors";
+
+async function copyText(text) {
+  const s = String(text || "");
+  try {
+    await navigator.clipboard.writeText(s);
+    return true;
+  } catch (_) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = s;
+      ta.setAttribute("readonly", "true");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {}
+  }
+  return false;
+}
+
+function CopyCommandRow({ label, command }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {label ? (
+        <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+          {label}
+        </span>
+      ) : null}
+      <code className={codeClass}>{command}</code>
+      <button type="button" className={copyBtnClass} onClick={() => copyText(command)}>
+        Copy
+      </button>
+    </div>
+  );
+}
 
 /** Served from public/downloads/fleetshare.apk — override with full URL if hosted elsewhere. */
 const DEFAULT_ANDROID_APK_PATH = "/downloads/fleetshare.apk";
@@ -163,6 +203,10 @@ export default function DownloadPageClient() {
                 <p className="text-xs leading-relaxed mt-4" style={{ color: "rgba(255,255,255,0.38)" }}>
                   {t("landing.download.fullServerRunHint")}
                 </p>
+                <div className="mt-3 space-y-2">
+                  <CopyCommandRow label="PowerShell (bypass):" command="Set-ExecutionPolicy -Scope Process Bypass -Force" />
+                  <CopyCommandRow label="PowerShell:" command=".\fleetshare-full-server-install.ps1" />
+                </div>
               </div>
             </div>
 
@@ -239,6 +283,10 @@ export default function DownloadPageClient() {
                 <p className="text-xs leading-relaxed mt-4" style={{ color: "rgba(255,255,255,0.38)" }}>
                   {t("landing.download.aiValidatorRunHint")}
                 </p>
+                <div className="mt-3 space-y-2">
+                  <CopyCommandRow label="PowerShell (bypass):" command="Set-ExecutionPolicy -Scope Process Bypass -Force" />
+                  <CopyCommandRow label="PowerShell:" command=".\fleetshare-ai-validator-install.ps1" />
+                </div>
               </div>
             </div>
 
