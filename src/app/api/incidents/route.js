@@ -15,6 +15,7 @@ export const maxDuration = 60;
 const postFieldsSchema = z.object({
   carId: z.string().min(1),
   occurredAt: z.string().datetime().optional(),
+  severity: z.enum(["A", "B", "C"]).optional(),
   title: z.string().min(3).max(140),
   description: z.string().max(8000).optional().nullable(),
   location: z.string().max(200).optional().nullable(),
@@ -74,6 +75,7 @@ export async function GET(request) {
         url: incidentAttachmentUrlForApi(a.blobUrl, a.id),
         createdAt: a.createdAt,
       })),
+      severity: r.severity || "C",
     }))
   );
 }
@@ -92,6 +94,7 @@ export async function POST(request) {
   const raw = {
     carId: String(form.get("carId") || "").trim(),
     occurredAt: String(form.get("occurredAt") || "").trim() || undefined,
+    severity: String(form.get("severity") || "").trim() || undefined,
     title: String(form.get("title") || "").trim(),
     description: String(form.get("description") || "").trim() || null,
     location: String(form.get("location") || "").trim() || null,
@@ -108,6 +111,7 @@ export async function POST(request) {
   if (!car) return errorResponse("Car not found", 404);
 
   const occurredAt = parsed.data.occurredAt ? new Date(parsed.data.occurredAt) : new Date();
+  const severity = parsed.data.severity || "C";
 
   const incident = await tenant.incidentReport.create({
     data: {
@@ -117,12 +121,21 @@ export async function POST(request) {
       userId: out.session.userId,
       reservationId: parsed.data.reservationId || null,
       occurredAt,
+      severity,
       title: parsed.data.title,
       description: parsed.data.description || null,
       location: parsed.data.location || null,
       status: "SUBMITTED",
     },
   });
+
+  // Severity A => make car unavailable (IN_MAINTENANCE).
+  if (severity === "A") {
+    await tenant.car.updateMany({
+      where: { id: car.id, companyId: out.session.companyId },
+      data: { status: "IN_MAINTENANCE" },
+    });
+  }
 
   const files = form.getAll("files");
   const attachments = [];

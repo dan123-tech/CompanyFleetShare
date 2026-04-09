@@ -272,6 +272,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   const [incidentFilterFrom, setIncidentFilterFrom] = useState("");
   const [incidentFilterTo, setIncidentFilterTo] = useState("");
   const [incidentFilterText, setIncidentFilterText] = useState("");
+  const [incidentFilterSeverity, setIncidentFilterSeverity] = useState("");
 
   async function loadMaintenance() {
     setMaintenanceLoading(true);
@@ -1984,7 +1985,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
             </p>
 
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 space-y-3">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
                 <label className="block text-xs font-medium text-slate-600">
                   Vehicle
                   <select
@@ -2012,6 +2013,20 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     <option value="SUBMITTED">SUBMITTED</option>
                     <option value="IN_REVIEW">IN_REVIEW</option>
                     <option value="RESOLVED">RESOLVED</option>
+                  </select>
+                </label>
+
+                <label className="block text-xs font-medium text-slate-600">
+                  Gravity
+                  <select
+                    value={incidentFilterSeverity}
+                    onChange={(e) => setIncidentFilterSeverity(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                  >
+                    <option value="">All</option>
+                    <option value="A">A (Critical/High)</option>
+                    <option value="B">B (Medium)</option>
+                    <option value="C">C (Low)</option>
                   </select>
                 </label>
 
@@ -2063,6 +2078,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     onClick={() => {
                       setIncidentFilterCarId("");
                       setIncidentFilterStatus("");
+                      setIncidentFilterSeverity("");
                       setIncidentFilterDriver("");
                       setIncidentFilterFrom("");
                       setIncidentFilterTo("");
@@ -2083,6 +2099,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     <th className="py-4 px-4 font-semibold text-slate-700">Occurred</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Car</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Driver</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Gravity</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Title</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Status</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Attachments</th>
@@ -2098,6 +2115,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     incidents
                       .filter((r) => (incidentFilterCarId ? r.carId === incidentFilterCarId : true))
                       .filter((r) => (incidentFilterStatus ? (r.status || "SUBMITTED") === incidentFilterStatus : true))
+                      .filter((r) => (incidentFilterSeverity ? (r.severity || "C") === incidentFilterSeverity : true))
                       .filter((r) => {
                         const q = incidentFilterDriver.trim().toLowerCase();
                         if (!q) return true;
@@ -2141,6 +2159,13 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                         <td className="py-4 px-4 whitespace-nowrap">{formatDate(r.occurredAt || r.createdAt)}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{[r.car?.brand, r.car?.registrationNumber].filter(Boolean).join(" ")}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{r.user?.email || r.userId}</td>
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-lg text-xs font-bold border border-slate-200 bg-slate-50">
+                            {(r.severity || "C").toUpperCase()}
+                          </span>
+                        </span>
+                      </td>
                         <td className="py-4 px-4">{r.title}</td>
                         <td className="py-4 px-4">
                           <select

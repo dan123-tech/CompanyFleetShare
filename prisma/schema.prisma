@@ -270,6 +270,7 @@ model IncidentReport {
   userId        String
   reservationId String?
   occurredAt    DateTime
+  severity      String   @default("C") @db.VarChar(1) // A=Critical/High, B=Medium, C=Low
   title         String   @db.VarChar(140)
   description   String?  @db.Text
   location      String?  @db.VarChar(200)

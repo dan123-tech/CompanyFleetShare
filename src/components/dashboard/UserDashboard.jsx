@@ -125,6 +125,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [incidentLoading, setIncidentLoading] = useState(false);
   const [incidentCarId, setIncidentCarId] = useState("");
   const [incidentOccurredAt, setIncidentOccurredAt] = useState("");
+  const [incidentSeverity, setIncidentSeverity] = useState("C");
   const [incidentTitle, setIncidentTitle] = useState("");
   const [incidentLocation, setIncidentLocation] = useState("");
   const [incidentDescription, setIncidentDescription] = useState("");
@@ -1298,12 +1299,14 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                     const form = new FormData();
                     form.append("carId", incidentCarId);
                     if (incidentOccurredAt) form.append("occurredAt", new Date(incidentOccurredAt).toISOString());
+                    form.append("severity", incidentSeverity);
                     form.append("title", incidentTitle.trim());
                     if (incidentLocation.trim()) form.append("location", incidentLocation.trim());
                     if (incidentDescription.trim()) form.append("description", incidentDescription.trim());
                     for (const f of incidentFiles || []) form.append("files", f);
                     await apiIncidentCreate(form);
                     setIncidentTitle("");
+                    setIncidentSeverity("C");
                     setIncidentLocation("");
                     setIncidentDescription("");
                     setIncidentOccurredAt("");
@@ -1341,6 +1344,18 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                     onChange={(e) => setIncidentOccurredAt(e.target.value)}
                     className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
                   />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Gravity
+                  <select
+                    value={incidentSeverity}
+                    onChange={(e) => setIncidentSeverity(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                  >
+                    <option value="A">A — Critical / High (car becomes unavailable)</option>
+                    <option value="B">B — Medium (repair needed, car may still be usable)</option>
+                    <option value="C">C — Low (minor issue / cosmetic)</option>
+                  </select>
                 </label>
                 <label className="block text-xs font-medium text-slate-600">
                   Location (optional)

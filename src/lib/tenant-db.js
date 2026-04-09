@@ -338,6 +338,7 @@ CREATE TABLE IF NOT EXISTS "IncidentReport" (
   "userId" TEXT NOT NULL,
   "reservationId" TEXT,
   "occurredAt" TIMESTAMP(3) NOT NULL,
+  "severity" VARCHAR(1) NOT NULL DEFAULT 'C',
   "title" VARCHAR(140) NOT NULL,
   "description" TEXT,
   "location" VARCHAR(200),
@@ -379,6 +380,7 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeWebSessionToken" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeMobileSessionToken" TEXT;
 ALTER TABLE "Car" ADD COLUMN IF NOT EXISTS "itpExpiresAt" TIMESTAMP(3);
 ALTER TABLE "Car" ADD COLUMN IF NOT EXISTS "itpLastNotifiedAt" TIMESTAMP(3);
+ALTER TABLE "IncidentReport" ADD COLUMN IF NOT EXISTS "severity" VARCHAR(1) NOT NULL DEFAULT 'C';
 
 CREATE TABLE IF NOT EXISTS "MobileCaptureSession" (
   "id" TEXT PRIMARY KEY,
@@ -404,6 +406,7 @@ CREATE TABLE IF NOT EXISTS "IncidentReport" (
   "userId" TEXT NOT NULL,
   "reservationId" TEXT,
   "occurredAt" TIMESTAMP(3) NOT NULL,
+  "severity" VARCHAR(1) NOT NULL DEFAULT 'C',
   "title" VARCHAR(140) NOT NULL,
   "description" TEXT,
   "location" VARCHAR(200),
