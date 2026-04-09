@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { requireCompany, errorResponse, jsonResponse } from "@/lib/api-helpers";
 import { getTenantPrisma } from "@/lib/tenant-db";
+import { incidentAttachmentUrlForApi } from "@/lib/incident-ref";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,56 @@ const patchSchema = z.object({
   severity: z.enum(["A", "B", "C"]).optional(),
   adminNotes: z.string().max(8000).optional().nullable(),
 });
+
+export async function GET(_request, { params }) {
+  const out = await requireCompany();
+  if ("response" in out) return out.response;
+
+  const { id } = await params;
+  const tenant = await getTenantPrisma(out.session.companyId);
+  const isAdmin = out.session.role === "ADMIN";
+
+  const row = await tenant.incidentReport.findFirst({
+    where: {
+      id,
+      companyId: out.session.companyId,
+      ...(isAdmin ? {} : { userId: out.session.userId }),
+    },
+    include: {
+      car: { select: { id: true, brand: true, model: true, registrationNumber: true } },
+      user: { select: { id: true, name: true, email: true } },
+      attachments: true,
+    },
+  });
+  if (!row) return errorResponse("Not found", 404);
+
+  return jsonResponse({
+    id: row.id,
+    companyId: row.companyId,
+    carId: row.carId,
+    userId: row.userId,
+    reservationId: row.reservationId,
+    occurredAt: row.occurredAt,
+    severity: row.severity || "C",
+    title: row.title,
+    description: row.description,
+    location: row.location,
+    status: row.status,
+    adminNotes: isAdmin ? row.adminNotes : null,
+    createdAt: row.createdAt,
+    car: row.car,
+    user: row.user,
+    attachments: (row.attachments || []).map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      filename: a.filename,
+      contentType: a.contentType,
+      sizeBytes: a.sizeBytes,
+      url: incidentAttachmentUrlForApi(a.blobUrl, a.id),
+      createdAt: a.createdAt,
+    })),
+  });
+}
 
 export async function PATCH(request, { params }) {
   const out = await requireCompany();

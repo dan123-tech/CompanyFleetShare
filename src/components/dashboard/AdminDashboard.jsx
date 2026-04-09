@@ -266,6 +266,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   const [incidents, setIncidents] = useState([]);
   const [incidentsLoading, setIncidentsLoading] = useState(false);
   const [incidentSavingId, setIncidentSavingId] = useState(null);
+  const [incidentModal, setIncidentModal] = useState(null);
   const [incidentFilterCarId, setIncidentFilterCarId] = useState("");
   const [incidentFilterStatus, setIncidentFilterStatus] = useState("");
   const [incidentFilterDriver, setIncidentFilterDriver] = useState("");
@@ -359,6 +360,11 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
     if (!d) return "—";
     const x = new Date(d);
     return x.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
+  }
+
+  function isImageAttachment(a) {
+    const ct = String(a?.contentType || "").toLowerCase();
+    return ct.startsWith("image/");
   }
 
   async function handleRefreshCodes(reservationId) {
@@ -2155,7 +2161,16 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                         return hay.includes(q);
                       })
                       .map((r) => (
-                      <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors align-top">
+                    <tr
+                      key={r.id}
+                      className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors align-top cursor-pointer"
+                      onClick={() => setIncidentModal(r)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") setIncidentModal(r);
+                      }}
+                    >
                         <td className="py-4 px-4 whitespace-nowrap">{formatDate(r.occurredAt || r.createdAt)}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{[r.car?.brand, r.car?.registrationNumber].filter(Boolean).join(" ")}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{r.user?.email || r.userId}</td>
@@ -2172,6 +2187,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                             value={r.status || "SUBMITTED"}
                             disabled={incidentSavingId === r.id}
                             onChange={async (e) => {
+                            e.stopPropagation();
                               const status = e.target.value;
                               setIncidentSavingId(r.id);
                               setError("");
@@ -2196,7 +2212,14 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                           {(r.attachments || []).length ? (
                             <div className="flex flex-col gap-1 max-h-28 overflow-auto pr-1">
                               {r.attachments.map((a) => (
-                                <a key={a.id} href={a.url} target="_blank" rel="noreferrer noopener" className="text-xs text-sky-700 hover:underline">
+                                <a
+                                  key={a.id}
+                                  href={a.url}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  className="text-xs text-sky-700 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {a.filename}
                                 </a>
                               ))}
@@ -2211,6 +2234,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                             placeholder="Optional"
                             rows={2}
                             className="w-full min-w-[240px] px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                          onClick={(e) => e.stopPropagation()}
                             onBlur={async (e) => {
                               const adminNotes = e.target.value || "";
                               setIncidentSavingId(r.id);
@@ -2231,6 +2255,114 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 </tbody>
               </table>
             </div>
+
+            {incidentModal && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setIncidentModal(null)}>
+                <div
+                  className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden border border-slate-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-500">Incident report</p>
+                      <h3 className="text-lg font-bold text-slate-900 truncate">
+                        {incidentModal.title || "Incident"}
+                      </h3>
+                      <p className="text-sm text-slate-600 mt-1">
+                        {[incidentModal.car?.brand, incidentModal.car?.model, incidentModal.car?.registrationNumber].filter(Boolean).join(" ") || "—"}
+                      </p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <a
+                        href={`/incidents/${encodeURIComponent(incidentModal.id)}`}
+                        className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Open page
+                      </a>
+                      <button type="button" onClick={() => setIncidentModal(null)} className="text-2xl text-slate-500 hover:text-slate-800 transition-colors">
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-5 sm:p-6 overflow-y-auto max-h-[calc(85vh-80px)] space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Occurred</p>
+                        <p className="text-sm text-slate-800">{formatDate(incidentModal.occurredAt || incidentModal.createdAt)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Driver</p>
+                        <p className="text-sm text-slate-800">{incidentModal.user?.email || incidentModal.userId || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Gravity</p>
+                        <p className="text-sm font-bold text-slate-900">{(incidentModal.severity || "C").toUpperCase()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Status</p>
+                        <p className="text-sm font-bold text-slate-900">{incidentModal.status || "SUBMITTED"}</p>
+                      </div>
+                      {incidentModal.location ? (
+                        <div className="sm:col-span-2">
+                          <p className="text-xs font-semibold text-slate-500">Location</p>
+                          <p className="text-sm text-slate-800">{incidentModal.location}</p>
+                        </div>
+                      ) : null}
+                      {incidentModal.description ? (
+                        <div className="sm:col-span-2">
+                          <p className="text-xs font-semibold text-slate-500">Description</p>
+                          <p className="text-sm text-slate-800 whitespace-pre-wrap">{incidentModal.description}</p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 mb-2">Attachments</p>
+                      {(incidentModal.attachments || []).length === 0 ? (
+                        <p className="text-sm text-slate-500">No attachments.</p>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {(incidentModal.attachments || [])
+                              .filter((a) => isImageAttachment(a))
+                              .map((a) => (
+                                <a
+                                  key={a.id}
+                                  href={a.url}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  className="block rounded-xl border border-slate-200 overflow-hidden bg-slate-50 hover:bg-slate-100 transition-colors"
+                                  title={a.filename}
+                                >
+                                  <img src={a.url} alt={a.filename} className="w-full h-56 object-cover" />
+                                  <div className="p-3">
+                                    <p className="text-xs font-semibold text-slate-800 truncate">{a.filename}</p>
+                                  </div>
+                                </a>
+                              ))}
+                          </div>
+                          <div className="space-y-2">
+                            {(incidentModal.attachments || []).map((a) => (
+                              <div key={a.id} className="flex items-center justify-between gap-3">
+                                <a href={a.url} target="_blank" rel="noreferrer noopener" className="text-sm text-sky-700 hover:underline truncate">
+                                  {a.filename}
+                                </a>
+                                <span className="text-xs text-slate-500 shrink-0">
+                                  {a.contentType || "file"} · {typeof a.sizeBytes === "number" ? `${a.sizeBytes} bytes` : "—"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         )}
 

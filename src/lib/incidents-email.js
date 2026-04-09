@@ -52,6 +52,22 @@ async function bufferFromStoredIncidentBlob(stored) {
   return null;
 }
 
+function absolutePublicUrl(pathOrUrl) {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || process.env.EMAIL_PUBLIC_SITE_URL || "").replace(/\/$/, "");
+  if (!base) return null;
+  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) return pathOrUrl;
+  const p = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
+  return `${base}${p}`;
+}
+
+function buttonHtml(href, label) {
+  const h = escapeEmailText(href);
+  const l = escapeEmailText(label);
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0 8px;"><tr><td style="border-radius:10px;background-color:#0369a1;">
+    <a href="${h}" style="display:inline-block;padding:12px 22px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">${l}</a>
+  </td></tr></table>`;
+}
+
 export async function sendIncidentAdminEmail(companyId, { incidentId }) {
   const tenant = await getTenantPrisma(companyId);
   const company = await tenant.company.findUnique({ where: { id: companyId }, select: { name: true } });
@@ -117,6 +133,9 @@ export async function sendIncidentAdminEmail(companyId, { incidentId }) {
         .join("")}</ul>`
     : `<p style="margin:0;color:#64748b;font-size:14px;">No attachments.</p>`;
 
+  const reportUrl = absolutePublicUrl(`/incidents/${encodeURIComponent(incident.id)}`);
+  const reportButton = reportUrl ? buttonHtml(reportUrl, "View incident report") : "";
+
   const innerHtml = `
     <p style="margin:0 0 10px;font-size:18px;font-weight:800;color:#0f172a;">New incident report</p>
     <div style="margin:0 0 14px;padding:12px 14px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:12px;">
@@ -126,6 +145,7 @@ export async function sendIncidentAdminEmail(companyId, { incidentId }) {
       <p style="margin:0 0 6px;"><strong style="color:#0f172a;">Car:</strong> ${escapeEmailText(carLabel)}</p>
       <p style="margin:0;"><strong style="color:#0f172a;">Driver:</strong> ${escapeEmailText(driverLabel)}</p>
     </div>
+    ${reportButton}
     ${
       incident.location
         ? `<p style="margin:0 0 8px;"><strong style="color:#0f172a;">Location:</strong> ${escapeEmailText(incident.location)}</p>`

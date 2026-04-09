@@ -325,6 +325,13 @@ export async function apiIncidentAdminUpdate(id, patch) {
   return data;
 }
 
+export async function apiIncidentGet(id) {
+  const res = await fetch(`/api/incidents/${encodeURIComponent(id)}`, getOpts("GET"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to load incident report");
+  return data;
+}
+
 export async function apiUsers(status) {
   const url = status ? `/api/users?status=${encodeURIComponent(status)}` : "/api/users";
   const res = await fetch(url, getOpts("GET"));
