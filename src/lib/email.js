@@ -13,6 +13,7 @@ const RESEND_API = "https://api.resend.com/emails";
 
 /** Primary + footer logos (SVG). For strict Gmail compatibility, set EMAIL_LOGO_URL to a hosted PNG. */
 const LOGO_PATH_FULL = "/brand/fleetshare-logo-dark.svg";
+const LOGO_PATH_FULL_LIGHT = "/brand/fleetshare-logo-light.svg";
 const LOGO_PATH_MARK = "/brand/fleetshare-mark-light.svg";
 
 function fromAddress() {
@@ -58,13 +59,21 @@ export function wrapBrandedEmailHtml({ innerHtml, preheader = "" }) {
   const base = getPublicBaseUrl();
   const logoOverride = process.env.EMAIL_LOGO_URL?.trim();
   const logoFull = logoOverride || (base ? absoluteUrl(LOGO_PATH_FULL) : null);
+  const logoFullLight = !logoOverride && base ? absoluteUrl(LOGO_PATH_FULL_LIGHT) : null;
   const logoMark = base ? absoluteUrl(LOGO_PATH_MARK) : null;
   const safeBase = base ? escapeEmailText(base) : "";
   const displayHost = base ? escapeEmailText(base.replace(/^https?:\/\//, "")) : "FleetShare";
   const pre = escapeEmailText(preheader).slice(0, 200);
 
   const headerBlock = logoFull
-    ? `<img src="${escapeEmailText(logoFull)}" alt="FleetShare" width="260" height="87" style="display:block;margin:0 auto;max-width:260px;height:auto;width:100%;" />`
+    ? `
+      <img class="fs-logo-dark" src="${escapeEmailText(logoFull)}" alt="FleetShare" width="260" height="87" style="display:block;margin:0 auto;max-width:260px;height:auto;width:100%;" />
+      ${
+        logoFullLight
+          ? `<img class="fs-logo-light" src="${escapeEmailText(logoFullLight)}" alt="FleetShare" width="260" height="87" style="display:none;margin:0 auto;max-width:260px;height:auto;width:100%;" />`
+          : ""
+      }
+    `.trim()
     : `<div style="font-size:24px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">FleetShare</div>`;
 
   const footerLink = base
@@ -82,6 +91,12 @@ export function wrapBrandedEmailHtml({ innerHtml, preheader = "" }) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="x-ua-compatible" content="ie=edge" />
   <title>FleetShare</title>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .fs-logo-dark { display: none !important; }
+      .fs-logo-light { display: block !important; }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#e2e8f0;-webkit-font-smoothing:antialiased;">
   ${pre ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${pre}</div>` : ""}

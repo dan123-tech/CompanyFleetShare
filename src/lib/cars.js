@@ -64,6 +64,20 @@ async function backfillCarsFromLegacyIfEmpty(companyId) {
 export async function listCars(companyId, status) {
   await backfillCarsFromLegacyIfEmpty(companyId);
   const prisma = await getTenantPrisma(companyId);
+  // Safety net: ensure expired ITP cars cannot remain AVAILABLE even if cron is not configured/running.
+  const autoBlock = String(process.env.ITP_AUTO_BLOCK_EXPIRED || "true").toLowerCase() !== "false";
+  if (autoBlock) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    await prisma.car.updateMany({
+      where: {
+        companyId,
+        status: "AVAILABLE",
+        itpExpiresAt: { not: null, lt: today },
+      },
+      data: { status: "IN_MAINTENANCE" },
+    }).catch(() => {});
+  }
   return prisma.car.findMany({
     where: { companyId, ...(status ? { status } : {}) },
     orderBy: { createdAt: "desc" },

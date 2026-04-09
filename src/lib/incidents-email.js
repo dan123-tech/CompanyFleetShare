@@ -1,6 +1,10 @@
 import { getTenantPrisma } from "@/lib/tenant-db";
 import { escapeEmailText, sendEmail, wrapBrandedEmailHtml } from "@/lib/email";
-import { incidentAttachmentUrlForApi } from "@/lib/incident-ref";
+import { readFile } from "fs/promises";
+import path from "path";
+import { get } from "@vercel/blob";
+import { resolveBlobReadWriteToken } from "@/lib/blob-env";
+import { INCIDENT_PRIVATE_PREFIX, incidentAttachmentUrlForApi } from "@/lib/incident-ref";
 
 function formatOccurred(d) {
   try {
@@ -8,6 +12,44 @@ function formatOccurred(d) {
   } catch {
     return "—";
   }
+}
+
+async function bufferFromStoredIncidentBlob(stored) {
+  const v = String(stored || "");
+  if (!v) return null;
+
+  if (v.startsWith("/uploads/incidents/")) {
+    const rel = v.slice("/uploads/incidents/".length);
+    if (!rel || rel.includes("..") || rel.includes("\\") || rel.includes("%5c")) return null;
+    const parts = rel.split("/").filter(Boolean);
+    if (parts.length < 2) return null;
+    const incidentId = parts[0];
+    const filename = parts.slice(1).join("/");
+    const filepath = path.join(process.cwd(), "public", "uploads", "incidents", incidentId, filename);
+    return Buffer.from(await readFile(filepath));
+  }
+
+  const token = resolveBlobReadWriteToken();
+
+  if (v.startsWith(INCIDENT_PRIVATE_PREFIX)) {
+    const pathname = v.slice(INCIDENT_PRIVATE_PREFIX.length);
+    if (!token) return null;
+    const result = await get(pathname, { access: "private", token });
+    if (!result?.stream) return null;
+    const ab = await new Response(result.stream).arrayBuffer();
+    return Buffer.from(ab);
+  }
+
+  if (v.startsWith("https://") || v.startsWith("http://")) {
+    const isPrivate = v.includes(".private.blob.vercel-storage.com");
+    const access = isPrivate ? "private" : "public";
+    const result = await get(v, { access, ...(token ? { token } : {}) });
+    if (!result?.stream) return null;
+    const ab = await new Response(result.stream).arrayBuffer();
+    return Buffer.from(ab);
+  }
+
+  return null;
 }
 
 export async function sendIncidentAdminEmail(companyId, { incidentId }) {
@@ -105,6 +147,27 @@ export async function sendIncidentAdminEmail(companyId, { incidentId }) {
     preheader: `New incident: ${incident.title || "Incident"} — ${carLabel}`,
   });
 
-  return sendEmail({ to, subject, html, text });
+  // Attach files as real email attachments (optional).
+  const wantAttach = String(process.env.INCIDENT_EMAIL_ATTACHMENTS || "").toLowerCase() === "true";
+  const maxTotal = Math.max(0, parseInt(process.env.INCIDENT_EMAIL_ATTACHMENTS_MAX_BYTES || "7000000", 10) || 7000000);
+  const maxFiles = Math.max(0, parseInt(process.env.INCIDENT_EMAIL_ATTACHMENTS_MAX_FILES || "5", 10) || 5);
+  const attachmentsForEmail = [];
+  if (wantAttach && maxTotal > 0 && maxFiles > 0) {
+    let total = 0;
+    for (const a of (incident.attachments || [])) {
+      if (attachmentsForEmail.length >= maxFiles) break;
+      if (a?.sizeBytes != null && total + Number(a.sizeBytes) > maxTotal) break;
+      const buf = await bufferFromStoredIncidentBlob(a.blobUrl).catch(() => null);
+      if (!buf || !buf.length) continue;
+      total += buf.length;
+      attachmentsForEmail.push({
+        filename: a.filename || `attachment-${a.id}`,
+        content: buf.toString("base64"),
+        content_type: a.contentType || "application/octet-stream",
+      });
+    }
+  }
+
+  return sendEmail({ to, subject, html, text, attachments: attachmentsForEmail });
 }
 
