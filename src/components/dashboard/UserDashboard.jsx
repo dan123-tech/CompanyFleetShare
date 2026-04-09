@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Fragment, useMemo } from "react";
-import { LayoutGrid, IdCard, Car, Wrench, Calendar, History, CalendarDays, Shield, Info } from "lucide-react";
+import { LayoutGrid, IdCard, Car, Wrench, Calendar, History, CalendarDays, Shield, Info, AlertTriangle } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Sidebar, NavItem, NavSection, NavLabel } from "./Sidebar";
 import FleetBookingCalendar from "./FleetBookingCalendar";
@@ -18,6 +18,8 @@ import {
   apiUploadDrivingLicence,
   apiDeleteDrivingLicence,
   apiCreateMobileCaptureSession,
+  apiIncidentsList,
+  apiIncidentCreate,
   apiUserMfaUpdate,
   apiUserEmailNotifications,
   apiUserCalendarFeedUrl,
@@ -38,6 +40,7 @@ const USER_PAGE_META_KEYS = {
   availableCars: "userAvailableCars",
   unavailableCars: "userUnavailableCars",
   history: "userHistory",
+  incidents: "userIncidents",
 };
 
 function formatDate(d) {
@@ -117,6 +120,15 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarUrl, setCalendarUrl] = useState("");
   const [calendarMsg, setCalendarMsg] = useState(null);
+  const [incidents, setIncidents] = useState([]);
+  const [incidentLoading, setIncidentLoading] = useState(false);
+  const [incidentCarId, setIncidentCarId] = useState("");
+  const [incidentOccurredAt, setIncidentOccurredAt] = useState("");
+  const [incidentTitle, setIncidentTitle] = useState("");
+  const [incidentLocation, setIncidentLocation] = useState("");
+  const [incidentDescription, setIncidentDescription] = useState("");
+  const [incidentFiles, setIncidentFiles] = useState([]);
+  const [incidentSubmitting, setIncidentSubmitting] = useState(false);
   const dlStatus = user?.drivingLicenceStatus ?? null;
   const identityStatus = user?.identityStatus ?? null;
   const canReserve = dlStatus === "APPROVED";
@@ -143,6 +155,23 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   useEffect(() => {
     load();
   }, []);
+
+  async function loadIncidents() {
+    setIncidentLoading(true);
+    setError("");
+    try {
+      const list = await apiIncidentsList();
+      setIncidents(Array.isArray(list) ? list : []);
+    } catch (err) {
+      setError(err.message || "Failed to load incidents");
+    } finally {
+      setIncidentLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (section === "incidents") loadIncidents();
+  }, [section]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60 * 1000);
@@ -444,6 +473,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
           { id: "myReservations", label: t("nav.items.myReservations"), icon: <Calendar className={UICON.s} aria-hidden /> },
           { id: "bookingCalendar", label: t("nav.items.bookingCalendar"), icon: <CalendarDays className={UICON.s} aria-hidden /> },
           { id: "history", label: t("nav.items.history"), icon: <History className={UICON.s} aria-hidden /> },
+          { id: "incidents", label: "Incidents", icon: <AlertTriangle className={UICON.s} aria-hidden /> },
         ],
       },
     ],
@@ -1241,6 +1271,172 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                   )}
                 </tbody>
               </table>
+            </div>
+          </section>
+        )}
+
+        {section === "incidents" && (
+          <section className="w-full min-w-0 space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 max-w-3xl">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Report an incident</h2>
+              <p className="text-sm text-slate-500 mb-4">
+                If you had an accident, scratch, damage, or any issue, submit details here and upload photos/documents. Admins will be notified.
+              </p>
+              <form
+                className="grid gap-3 sm:grid-cols-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!incidentCarId || !incidentTitle.trim()) {
+                    setError("Select a car and enter a short title.");
+                    return;
+                  }
+                  setIncidentSubmitting(true);
+                  setError("");
+                  try {
+                    const form = new FormData();
+                    form.append("carId", incidentCarId);
+                    if (incidentOccurredAt) form.append("occurredAt", new Date(incidentOccurredAt).toISOString());
+                    form.append("title", incidentTitle.trim());
+                    if (incidentLocation.trim()) form.append("location", incidentLocation.trim());
+                    if (incidentDescription.trim()) form.append("description", incidentDescription.trim());
+                    for (const f of incidentFiles || []) form.append("files", f);
+                    await apiIncidentCreate(form);
+                    setIncidentTitle("");
+                    setIncidentLocation("");
+                    setIncidentDescription("");
+                    setIncidentOccurredAt("");
+                    setIncidentFiles([]);
+                    await loadIncidents();
+                  } catch (err) {
+                    setError(err.message || "Failed to submit incident");
+                  } finally {
+                    setIncidentSubmitting(false);
+                  }
+                }}
+              >
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Vehicle
+                  <select
+                    value={incidentCarId}
+                    onChange={(e) => setIncidentCarId(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    required
+                  >
+                    <option value="">—</option>
+                    {cars.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.brand} {c.registrationNumber}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Date & time (optional)
+                  <input
+                    type="datetime-local"
+                    value={incidentOccurredAt}
+                    onChange={(e) => setIncidentOccurredAt(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                  />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Location (optional)
+                  <input
+                    type="text"
+                    value={incidentLocation}
+                    onChange={(e) => setIncidentLocation(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="e.g. Parking lot, street"
+                  />
+                </label>
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Title
+                  <input
+                    type="text"
+                    value={incidentTitle}
+                    onChange={(e) => setIncidentTitle(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="e.g. Scratch on rear bumper"
+                    required
+                  />
+                </label>
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Description (optional)
+                  <textarea
+                    value={incidentDescription}
+                    onChange={(e) => setIncidentDescription(e.target.value)}
+                    rows={4}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="What happened? Any third-party info? Police report? Was anyone injured?"
+                  />
+                </label>
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Photos / documents
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => setIncidentFiles(Array.from(e.target.files || []))}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Suggested: car damage photos, licence plate photos, insurance docs, police report PDF.
+                  </p>
+                </label>
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={incidentSubmitting}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
+                  >
+                    {incidentSubmitting ? "Submitting…" : "Submit incident"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">My incident reports</h3>
+              {incidentLoading ? (
+                <p className="text-sm text-slate-500">Loading…</p>
+              ) : incidents.length === 0 ? (
+                <p className="text-sm text-slate-500">No incidents reported yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px]">
+                    <thead>
+                      <tr className="text-left text-xs text-slate-500">
+                        <th className="py-2 pr-3">Date</th>
+                        <th className="py-2 pr-3">Car</th>
+                        <th className="py-2 pr-3">Title</th>
+                        <th className="py-2 pr-3">Status</th>
+                        <th className="py-2 pr-3">Files</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm text-slate-800">
+                      {incidents.map((r) => (
+                        <tr key={r.id} className="border-t border-slate-100">
+                          <td className="py-3 pr-3 whitespace-nowrap">{new Date(r.occurredAt || r.createdAt).toLocaleString()}</td>
+                          <td className="py-3 pr-3 whitespace-nowrap">{[r.car?.brand, r.car?.registrationNumber].filter(Boolean).join(" ")}</td>
+                          <td className="py-3 pr-3">{r.title}</td>
+                          <td className="py-3 pr-3 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800">
+                              {r.status || "SUBMITTED"}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-3 whitespace-nowrap">
+                            {(r.attachments || []).length ? (
+                              <span className="text-xs text-slate-600">{r.attachments.length}</span>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </section>
         )}

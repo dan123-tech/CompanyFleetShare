@@ -254,6 +254,55 @@ export async function sendMobileCaptureLinkEmail({ to, name, captureUrl, expires
   return sendEmail({ to, subject: "Complete identity verification on your phone", html, text });
 }
 
+export async function sendItpExpiryAdminEmail({ to, companyName, cars, reminderDays }) {
+  const safeCompany = escapeEmailText(companyName || "your company");
+  const rows = Array.isArray(cars) ? cars : [];
+  const subject =
+    rows.some((c) => typeof c?.daysUntil === "number" && c.daysUntil < 0)
+      ? `ITP expired — ${safeCompany}`
+      : `ITP expiring soon — ${safeCompany}`;
+
+  const textLines = [
+    `ITP reminder for ${companyName || "company"}`,
+    "",
+    `Cars with ITP expiring within ${Number(reminderDays) || 0} day(s):`,
+    "",
+    ...rows.map((c) => {
+      const label = c?.label || c?.carId || "Car";
+      const exp = c?.expiresAt ? new Date(c.expiresAt).toLocaleDateString("en-GB") : "—";
+      const d = typeof c?.daysUntil === "number" ? c.daysUntil : null;
+      const suffix = d == null ? "" : d < 0 ? ` (expired ${Math.abs(d)} day(s) ago)` : ` (${d} day(s) left)`;
+      return `- ${label}: ${exp}${suffix}`;
+    }),
+    "",
+    brandedTextFooter(),
+  ];
+
+  const listHtml = rows
+    .map((c) => {
+      const label = escapeEmailText(c?.label || c?.carId || "Car");
+      const exp = c?.expiresAt ? escapeEmailText(new Date(c.expiresAt).toLocaleDateString("en-GB")) : "—";
+      const d = typeof c?.daysUntil === "number" ? c.daysUntil : null;
+      const suffix = d == null ? "" : d < 0 ? ` (expired ${Math.abs(d)} day(s) ago)` : ` (${d} day(s) left)`;
+      return `<li style="margin:0 0 8px;"><strong style="color:#0f172a;">${label}</strong>: ${exp}${escapeEmailText(suffix)}</li>`;
+    })
+    .join("");
+
+  const innerHtml = `
+    <p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#0f172a;">ITP reminder</p>
+    <p style="margin:0 0 16px;color:#334155;">Company: <strong style="color:#0f172a;">${safeCompany}</strong></p>
+    <p style="margin:0 0 12px;color:#334155;">Cars with ITP expiring within <strong>${escapeEmailText(String(reminderDays))}</strong> day(s):</p>
+    <ul style="margin:0;padding-left:18px;color:#334155;">${listHtml || "<li>No cars found.</li>"}</ul>
+  `.trim();
+
+  const html = wrapBrandedEmailHtml({
+    innerHtml,
+    preheader: `ITP expiry reminder for ${companyName || "your company"}.`,
+  });
+
+  return sendEmail({ to, subject, html, text: textLines.join("\n") });
+}
+
 /**
  * Sent after self-service registration.
  */

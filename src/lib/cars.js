@@ -118,6 +118,7 @@ export async function createCar(companyId, data) {
       batteryLevel: data.batteryLevel != null ? Math.min(100, Math.max(0, Number(data.batteryLevel))) : null,
       batteryCapacityKwh: data.batteryCapacityKwh != null ? Number(data.batteryCapacityKwh) : null,
       lastServiceMileage: data.lastServiceMileage != null ? Number(data.lastServiceMileage) : null,
+      itpExpiresAt: data.itpExpiresAt ?? null,
       ...(lastYm != null ? { lastServiceYearMonth: lastYm } : {}),
     },
   });
@@ -159,6 +160,10 @@ export async function updateCar(carId, companyId, data) {
         data.lastServiceYearMonth == null || String(data.lastServiceYearMonth).trim() === ""
           ? null
           : String(data.lastServiceYearMonth).trim(),
+    }),
+    ...(data.itpExpiresAt !== undefined && {
+      itpExpiresAt: data.itpExpiresAt,
+      itpLastNotifiedAt: null, // reset reminders when expiry changes
     }),
   };
   return prisma.car.updateMany({

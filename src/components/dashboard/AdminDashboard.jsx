@@ -5,6 +5,7 @@ import {
   BarChart2,
   Building2,
   Car,
+  AlertTriangle,
   KeyRound,
   Users,
   Mail,
@@ -47,6 +48,8 @@ import {
   apiMaintenanceList,
   apiMaintenanceCreate,
   apiMaintenanceDelete,
+  apiIncidentsList,
+  apiIncidentAdminUpdate,
 } from "@/lib/api";
 import DataSourceNotConfiguredEmptyState from "./DataSourceNotConfiguredEmptyState";
 import AuditLogsSection from "./AuditLogsSection";
@@ -68,6 +71,7 @@ const ADMIN_PAGE_META_KEYS = {
   aiVerification: "aiVerification",
   auditLogs: "auditLogs",
   maintenance: "maintenance",
+  incidents: "incidents",
 };
 
 function needsService(car) {
@@ -245,10 +249,17 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   const [maintCost, setMaintCost] = useState("");
   const [maintNotes, setMaintNotes] = useState("");
   const [maintSaving, setMaintSaving] = useState(false);
+  const [itpCarId, setItpCarId] = useState("");
+  const [itpExpiresAt, setItpExpiresAt] = useState("");
+  const [itpSaving, setItpSaving] = useState(false);
+  const [itpNotice, setItpNotice] = useState(null);
   const [maintFilterCarId, setMaintFilterCarId] = useState("");
   const [maintFilterDateFrom, setMaintFilterDateFrom] = useState("");
   const [maintFilterDateTo, setMaintFilterDateTo] = useState("");
   const [maintFilterService, setMaintFilterService] = useState("");
+  const [incidents, setIncidents] = useState([]);
+  const [incidentsLoading, setIncidentsLoading] = useState(false);
+  const [incidentSavingId, setIncidentSavingId] = useState(null);
 
   async function loadMaintenance() {
     setMaintenanceLoading(true);
@@ -311,7 +322,25 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
 
   useEffect(() => {
     if (section === "maintenance") loadMaintenance();
+    if (section === "incidents") {
+      setIncidentsLoading(true);
+      apiIncidentsList()
+        .then((list) => setIncidents(Array.isArray(list) ? list : []))
+        .catch((e) => setError(e instanceof Error ? e.message : "Failed to load incidents"))
+        .finally(() => setIncidentsLoading(false));
+    }
   }, [section]);
+
+  useEffect(() => {
+    if (!itpCarId) {
+      setItpExpiresAt("");
+      return;
+    }
+    const car = cars.find((c) => c.id === itpCarId);
+    const raw = car?.itpExpiresAt ? new Date(car.itpExpiresAt) : null;
+    if (raw && !Number.isNaN(raw.getTime())) setItpExpiresAt(raw.toISOString().slice(0, 10));
+    else setItpExpiresAt("");
+  }, [itpCarId, cars]);
 
   function formatDate(d) {
     if (!d) return "—";
@@ -1006,6 +1035,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
           { id: "cars", label: t("nav.items.manageCars"), icon: <Car className={ICON.s} aria-hidden /> },
           { id: "fleetCalendar", label: t("nav.items.fleetCalendar"), icon: <CalendarDays className={ICON.s} aria-hidden /> },
           { id: "maintenance", label: t("nav.items.maintenance"), icon: <Wrench className={ICON.s} aria-hidden /> },
+          { id: "incidents", label: "Incidents", icon: <AlertTriangle className={ICON.s} aria-hidden /> },
           { id: "history", label: t("nav.items.history"), icon: <History className={ICON.s} aria-hidden /> },
           { id: "verifyCode", label: t("nav.items.verifyCode"), icon: <KeyRound className={ICON.s} aria-hidden /> },
         ],
@@ -1934,6 +1964,106 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
           </section>
         )}
 
+        {section === "incidents" && (
+          <section className="w-full min-w-0 space-y-4">
+            <h2 className="text-2xl font-bold text-slate-800">Incidents</h2>
+            <p className="text-sm text-slate-500">
+              Driver-reported accidents/scratches with photos/documents. Admins can track status and add notes.
+            </p>
+
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden overflow-x-auto">
+              <table className="w-full min-w-[900px]">
+                <thead>
+                  <tr className="bg-slate-50 text-left">
+                    <th className="py-4 px-4 font-semibold text-slate-700">Occurred</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Car</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Driver</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Title</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Status</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Attachments</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Admin notes</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-800">
+                  {incidentsLoading ? (
+                    <tr><td colSpan={7} className="py-10 px-4 text-center text-slate-500">Loading…</td></tr>
+                  ) : incidents.length === 0 ? (
+                    <tr><td colSpan={7} className="py-10 px-4 text-center text-slate-500">No incidents reported.</td></tr>
+                  ) : (
+                    incidents.map((r) => (
+                      <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors align-top">
+                        <td className="py-4 px-4 whitespace-nowrap">{formatDate(r.occurredAt || r.createdAt)}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{[r.car?.brand, r.car?.registrationNumber].filter(Boolean).join(" ")}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{r.user?.email || r.userId}</td>
+                        <td className="py-4 px-4">{r.title}</td>
+                        <td className="py-4 px-4">
+                          <select
+                            value={r.status || "SUBMITTED"}
+                            disabled={incidentSavingId === r.id}
+                            onChange={async (e) => {
+                              const status = e.target.value;
+                              setIncidentSavingId(r.id);
+                              setError("");
+                              try {
+                                await apiIncidentAdminUpdate(r.id, { status });
+                                const list = await apiIncidentsList();
+                                setIncidents(Array.isArray(list) ? list : []);
+                              } catch (err) {
+                                setError(err.message || "Failed to update");
+                              } finally {
+                                setIncidentSavingId(null);
+                              }
+                            }}
+                            className="px-2 py-1.5 rounded-lg border border-slate-200 text-sm bg-white"
+                          >
+                            <option value="SUBMITTED">SUBMITTED</option>
+                            <option value="IN_REVIEW">IN_REVIEW</option>
+                            <option value="RESOLVED">RESOLVED</option>
+                          </select>
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {(r.attachments || []).length ? (
+                            <div className="flex flex-col gap-1">
+                              {r.attachments.slice(0, 3).map((a) => (
+                                <a key={a.id} href={a.url} target="_blank" rel="noreferrer noopener" className="text-xs text-sky-700 hover:underline">
+                                  {a.filename}
+                                </a>
+                              ))}
+                              {r.attachments.length > 3 && <span className="text-xs text-slate-500">+{r.attachments.length - 3} more</span>}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4">
+                          <textarea
+                            defaultValue={r.adminNotes || \"\"}
+                            placeholder=\"Optional\"
+                            rows={2}
+                            className=\"w-full min-w-[240px] px-3 py-2 rounded-lg border border-slate-200 text-sm\"
+                            onBlur={async (e) => {
+                              const adminNotes = e.target.value || \"\";
+                              setIncidentSavingId(r.id);
+                              setError(\"\");
+                              try {
+                                await apiIncidentAdminUpdate(r.id, { adminNotes });
+                              } catch (err) {
+                                setError(err.message || \"Failed to update notes\");
+                              } finally {
+                                setIncidentSavingId(null);
+                              }
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {section === "invites" && (
           <section className="w-full min-w-0">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Invites</h2>
@@ -2309,6 +2439,90 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
 
         {section === "maintenance" && (
           <section className="w-full min-w-0 space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 max-w-3xl">
+              <h3 className="text-sm font-semibold text-slate-800 mb-1">ITP (technical inspection)</h3>
+              <p className="text-xs text-slate-500 mb-3">
+                Track each car’s ITP expiry date. This is shown in the maintenance area and used for admin reminder emails (if configured).
+              </p>
+              <form
+                className="grid gap-3 sm:grid-cols-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!itpCarId) {
+                    setError("Select a car.");
+                    return;
+                  }
+                  setItpSaving(true);
+                  setError("");
+                  setItpNotice(null);
+                  try {
+                    const iso =
+                      itpExpiresAt && itpExpiresAt.trim()
+                        ? new Date(`${itpExpiresAt}T00:00:00`).toISOString()
+                        : null;
+                    await apiUpdateCar(itpCarId, { itpExpiresAt: iso });
+                    await load();
+                    setItpNotice({ type: "success", text: "ITP expiry saved." });
+                  } catch (err) {
+                    setError(err.message || "Failed to save ITP expiry");
+                  } finally {
+                    setItpSaving(false);
+                  }
+                }}
+              >
+                <label className="sm:col-span-2 block text-xs font-medium text-slate-600">
+                  Vehicle
+                  <select
+                    value={itpCarId}
+                    onChange={(e) => setItpCarId(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    required
+                  >
+                    <option value="">—</option>
+                    {cars.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.brand} {c.registrationNumber}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Expires on
+                  <input
+                    type="date"
+                    value={itpExpiresAt}
+                    onChange={(e) => setItpExpiresAt(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="YYYY-MM-DD"
+                  />
+                </label>
+                <div className="sm:col-span-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={itpSaving}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
+                  >
+                    {itpSaving ? "Saving…" : "Save ITP expiry"}
+                  </button>
+                  {itpCarId && (() => {
+                    const car = cars.find((c) => c.id === itpCarId);
+                    const exp = car?.itpExpiresAt ? new Date(car.itpExpiresAt) : null;
+                    if (!exp || Number.isNaN(exp.getTime())) return <span className="text-xs text-slate-500">No expiry date set.</span>;
+                    const days = Math.ceil((exp.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+                    const badge =
+                      days < 0 ? "bg-red-100 text-red-800" : days <= 30 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800";
+                    const label = days < 0 ? `Expired ${Math.abs(days)} day(s) ago` : `${days} day(s) left`;
+                    return <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${badge}`}>{label}</span>;
+                  })()}
+                </div>
+                {itpNotice && (
+                  <div className="sm:col-span-3 text-xs text-emerald-700">
+                    {itpNotice.text}
+                  </div>
+                )}
+              </form>
+            </div>
+
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 max-w-3xl">
               <h3 className="text-sm font-semibold text-slate-800 mb-3">Add service record</h3>
               <form

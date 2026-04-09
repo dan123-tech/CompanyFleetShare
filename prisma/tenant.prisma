@@ -185,12 +185,15 @@ model Car {
   batteryCapacityKwh         Float?
   lastServiceMileage         Int?
   lastServiceYearMonth       String?    @db.VarChar(7)
+  itpExpiresAt               DateTime?
+  itpLastNotifiedAt          DateTime?
   createdAt                  DateTime   @default(now())
   updatedAt                  DateTime   @updatedAt
 
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   reservations Reservation[]
   maintenanceEvents MaintenanceEvent[]
+  incidentReports IncidentReport[]
 }
 
 model MaintenanceEvent {
@@ -232,6 +235,50 @@ model Reservation {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
+model IncidentReport {
+  id          String   @id
+  companyId   String
+  carId       String
+  userId      String
+  reservationId String?
+  occurredAt  DateTime
+  title       String   @db.VarChar(140)
+  description String?  @db.Text
+  location    String?  @db.VarChar(200)
+  status      String   @default("SUBMITTED") @db.VarChar(40)
+  adminNotes  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  car         Car         @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  attachments IncidentAttachment[]
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([carId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+}
+
+model IncidentAttachment {
+  id           String   @id
+  companyId    String
+  incidentId   String
+  kind         String   @default("PHOTO") @db.VarChar(30) // PHOTO | DOCUMENT | OTHER
+  filename     String   @db.VarChar(260)
+  contentType  String   @db.VarChar(120)
+  sizeBytes    Int
+  blobUrl      String   @db.Text
+  createdAt    DateTime @default(now())
+
+  incident IncidentReport @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt(sort: Desc)])
+  @@index([companyId, createdAt(sort: Desc)])
 }
 
 model AuditLog {

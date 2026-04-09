@@ -283,6 +283,33 @@ export async function apiDeleteCar(id) {
   return data;
 }
 
+export async function apiIncidentsList() {
+  const res = await fetch("/api/incidents", getOpts("GET"));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to load incident reports");
+  return data;
+}
+
+export async function apiIncidentCreate(payload) {
+  const res = await fetch("/api/incidents", {
+    method: "POST",
+    cache: "no-store",
+    body: payload,
+    credentials: "include",
+    headers: { ...getWebTabSidHeaders() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to submit incident report");
+  return data;
+}
+
+export async function apiIncidentAdminUpdate(id, patch) {
+  const res = await fetch(`/api/incidents/${encodeURIComponent(id)}`, getOpts("PATCH", patch));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Failed to update incident report");
+  return data;
+}
+
 export async function apiUsers(status) {
   const url = status ? `/api/users?status=${encodeURIComponent(status)}` : "/api/users";
   const res = await fetch(url, getOpts("GET"));

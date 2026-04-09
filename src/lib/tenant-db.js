@@ -253,6 +253,8 @@ CREATE TABLE IF NOT EXISTS "Car" (
   "batteryCapacityKwh" DOUBLE PRECISION,
   "lastServiceMileage" INTEGER,
   "lastServiceYearMonth" VARCHAR(7),
+  "itpExpiresAt" TIMESTAMP(3),
+  "itpLastNotifiedAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "Car_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE
@@ -328,6 +330,46 @@ CREATE TABLE IF NOT EXISTS "AuditLog" (
 
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeWebSessionToken" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeMobileSessionToken" TEXT;
+
+CREATE TABLE IF NOT EXISTS "IncidentReport" (
+  "id" TEXT PRIMARY KEY,
+  "companyId" TEXT NOT NULL,
+  "carId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "reservationId" TEXT,
+  "occurredAt" TIMESTAMP(3) NOT NULL,
+  "title" VARCHAR(140) NOT NULL,
+  "description" TEXT,
+  "location" VARCHAR(200),
+  "status" VARCHAR(40) NOT NULL DEFAULT 'SUBMITTED',
+  "adminNotes" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "IncidentReport_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "IncidentReport_carId_fkey" FOREIGN KEY ("carId") REFERENCES "Car"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "IncidentReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "IncidentReport_reservationId_fkey" FOREIGN KEY ("reservationId") REFERENCES "Reservation"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "IncidentAttachment" (
+  "id" TEXT PRIMARY KEY,
+  "companyId" TEXT NOT NULL,
+  "incidentId" TEXT NOT NULL,
+  "kind" VARCHAR(30) NOT NULL DEFAULT 'PHOTO',
+  "filename" VARCHAR(260) NOT NULL,
+  "contentType" VARCHAR(120) NOT NULL,
+  "sizeBytes" INTEGER NOT NULL,
+  "blobUrl" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "IncidentAttachment_incidentId_fkey" FOREIGN KEY ("incidentId") REFERENCES "IncidentReport"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "IncidentReport_companyId_createdAt_idx" ON "IncidentReport"("companyId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentReport_carId_createdAt_idx" ON "IncidentReport"("carId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentReport_userId_createdAt_idx" ON "IncidentReport"("userId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentReport_status_idx" ON "IncidentReport"("status");
+CREATE INDEX IF NOT EXISTS "IncidentAttachment_incidentId_createdAt_idx" ON "IncidentAttachment"("incidentId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentAttachment_companyId_createdAt_idx" ON "IncidentAttachment"("companyId", "createdAt" DESC);
 `);
 }
 
@@ -335,6 +377,8 @@ async function ensureTenantSchemaCompatibility(client) {
   await client.$executeRawUnsafe(`
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeWebSessionToken" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeMobileSessionToken" TEXT;
+ALTER TABLE "Car" ADD COLUMN IF NOT EXISTS "itpExpiresAt" TIMESTAMP(3);
+ALTER TABLE "Car" ADD COLUMN IF NOT EXISTS "itpLastNotifiedAt" TIMESTAMP(3);
 
 CREATE TABLE IF NOT EXISTS "MobileCaptureSession" (
   "id" TEXT PRIMARY KEY,
@@ -352,6 +396,46 @@ CREATE TABLE IF NOT EXISTS "MobileCaptureSession" (
   CONSTRAINT "MobileCaptureSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "MobileCaptureSession_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS "IncidentReport" (
+  "id" TEXT PRIMARY KEY,
+  "companyId" TEXT NOT NULL,
+  "carId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "reservationId" TEXT,
+  "occurredAt" TIMESTAMP(3) NOT NULL,
+  "title" VARCHAR(140) NOT NULL,
+  "description" TEXT,
+  "location" VARCHAR(200),
+  "status" VARCHAR(40) NOT NULL DEFAULT 'SUBMITTED',
+  "adminNotes" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "IncidentReport_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "IncidentReport_carId_fkey" FOREIGN KEY ("carId") REFERENCES "Car"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "IncidentReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "IncidentReport_reservationId_fkey" FOREIGN KEY ("reservationId") REFERENCES "Reservation"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "IncidentAttachment" (
+  "id" TEXT PRIMARY KEY,
+  "companyId" TEXT NOT NULL,
+  "incidentId" TEXT NOT NULL,
+  "kind" VARCHAR(30) NOT NULL DEFAULT 'PHOTO',
+  "filename" VARCHAR(260) NOT NULL,
+  "contentType" VARCHAR(120) NOT NULL,
+  "sizeBytes" INTEGER NOT NULL,
+  "blobUrl" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "IncidentAttachment_incidentId_fkey" FOREIGN KEY ("incidentId") REFERENCES "IncidentReport"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "IncidentReport_companyId_createdAt_idx" ON "IncidentReport"("companyId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentReport_carId_createdAt_idx" ON "IncidentReport"("carId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentReport_userId_createdAt_idx" ON "IncidentReport"("userId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentReport_status_idx" ON "IncidentReport"("status");
+CREATE INDEX IF NOT EXISTS "IncidentAttachment_incidentId_createdAt_idx" ON "IncidentAttachment"("incidentId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "IncidentAttachment_companyId_createdAt_idx" ON "IncidentAttachment"("companyId", "createdAt" DESC);
 `);
 }
 

@@ -27,6 +27,8 @@ const postSchema = z.object({
   lastServiceYearMonth: z
     .preprocess((v) => (v === "" || v === null || v === undefined ? undefined : String(v).trim()), z.string().max(7).optional())
     .refine((v) => v === undefined || YEAR_MONTH.test(v), { message: "lastServiceYearMonth must be YYYY-MM" }),
+  itpExpiresAt: z
+    .preprocess((v) => (v === "" || v === null || v === undefined ? undefined : String(v)), z.string().datetime().optional()),
 });
 
 export async function GET(request) {
@@ -72,6 +74,7 @@ export async function GET(request) {
           batteryCapacityKwh: c.batteryCapacityKwh ?? null,
           lastServiceMileage: c.lastServiceMileage ?? null,
           lastServiceYearMonth: c.lastServiceYearMonth ?? null,
+          itpExpiresAt: c.itpExpiresAt ?? null,
           _count: c._count ?? { reservations: 0 },
         }))
       );
@@ -102,6 +105,7 @@ export async function GET(request) {
       batteryCapacityKwh: c.batteryCapacityKwh ?? null,
       lastServiceMileage: c.lastServiceMileage ?? null,
       lastServiceYearMonth: c.lastServiceYearMonth ?? null,
+      itpExpiresAt: c.itpExpiresAt ?? null,
       _count: c._count,
     }))
   );
@@ -112,7 +116,10 @@ export async function POST(request) {
   if ("response" in out) return out.response;
   const parsed = postSchema.safeParse(await request.json());
   if (!parsed.success) return errorResponse("Invalid input", 422);
-  const data = parsed.data;
+  const data = {
+    ...parsed.data,
+    ...(parsed.data.itpExpiresAt ? { itpExpiresAt: new Date(parsed.data.itpExpiresAt) } : {}),
+  };
 
   try {
     const provider = await getProvider(out.session.companyId, LAYERS.CARS);
@@ -182,6 +189,7 @@ export async function POST(request) {
       batteryCapacityKwh: car.batteryCapacityKwh ?? null,
       lastServiceMileage: car.lastServiceMileage ?? null,
       lastServiceYearMonth: car.lastServiceYearMonth ?? null,
+      itpExpiresAt: car.itpExpiresAt ?? null,
     },
     201
   );

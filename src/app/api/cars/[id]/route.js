@@ -34,6 +34,10 @@ const patchSchema = z.object({
     (v) => (v === "" || v === undefined ? undefined : v === null ? null : String(v).trim()),
     z.union([z.null(), z.string().regex(YEAR_MONTH)]).optional(),
   ),
+  itpExpiresAt: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : v === null ? null : String(v)),
+    z.union([z.null(), z.string().datetime()]).optional(),
+  ),
 });
 
 export async function GET(_request, { params }) {
@@ -82,6 +86,7 @@ export async function GET(_request, { params }) {
     batteryCapacityKwh: car.batteryCapacityKwh ?? null,
     lastServiceMileage: car.lastServiceMileage ?? null,
     lastServiceYearMonth: car.lastServiceYearMonth ?? null,
+      itpExpiresAt: car.itpExpiresAt ?? null,
     ...(canSeeHistory && {
       reservations: car.reservations.map((r) => ({
         id: r.id,
@@ -101,7 +106,12 @@ export async function PATCH(request, { params }) {
   const { id } = await params;
   const parsed = patchSchema.safeParse(await request.json());
   if (!parsed.success) return errorResponse("Invalid input", 422);
-  const data = parsed.data;
+  const data = {
+    ...parsed.data,
+    ...(parsed.data.itpExpiresAt !== undefined && {
+      itpExpiresAt: parsed.data.itpExpiresAt == null ? null : new Date(parsed.data.itpExpiresAt),
+    }),
+  };
 
   // Fetch current car state for before/after comparison
   let carBefore = null;
