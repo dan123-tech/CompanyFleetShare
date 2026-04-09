@@ -2443,7 +2443,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
         {section === "maintenance" && (
           <section className="w-full min-w-0 space-y-6">
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-3">Maintenance</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-3">{t("maintenanceUi.title")}</h2>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -2453,18 +2453,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                   }}
                   className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)]"
                 >
-                  {showItpForm ? "Close ITP form" : "Add / edit ITP"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      document.getElementById("itp-overview-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    } catch {}
-                  }}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                >
-                  View ITP table
+                  {showItpForm ? t("maintenanceUi.closeItpForm") : t("maintenanceUi.addEditItp")}
                 </button>
                 <button
                   type="button"
@@ -2474,7 +2463,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                   }}
                   className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-[#1E293B] text-white hover:bg-[#334155]"
                 >
-                  {showServiceForm ? "Close service form" : "Add service record"}
+                  {showServiceForm ? t("maintenanceUi.closeServiceForm") : t("maintenanceUi.addServiceRecord")}
                 </button>
               </div>
             </div>
@@ -2744,16 +2733,16 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-slate-200/70">
-                  <p className="text-xs font-semibold text-slate-700">ITP filters</p>
+                  <p className="text-xs font-semibold text-slate-700">{t("maintenanceUi.itpFiltersTitle")}</p>
                   <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="block text-xs font-medium text-slate-600">
-                      Vehicle (ITP)
+                      {t("maintenanceUi.itpFiltersVehicle")}
                       <select
                         value={itpFilterCarId}
                         onChange={(e) => setItpFilterCarId(e.target.value)}
                         className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
                       >
-                        <option value="">All cars</option>
+                        <option value="">{t("maintenanceUi.itpFiltersAllCars")}</option>
                         {cars.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.brand} {c.registrationNumber}
@@ -2762,17 +2751,17 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                       </select>
                     </label>
                     <label className="block text-xs font-medium text-slate-600">
-                      ITP status
+                      {t("maintenanceUi.itpFiltersStatus")}
                       <select
                         value={itpFilterStatus}
                         onChange={(e) => setItpFilterStatus(e.target.value)}
                         className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
                       >
-                        <option value="">All</option>
-                        <option value="not_set">Not set</option>
-                        <option value="expired">Expired</option>
-                        <option value="expiring_30">Expiring ≤ 30 days</option>
-                        <option value="ok">OK (&gt; 30 days)</option>
+                        <option value="">{t("maintenanceUi.itpStatusAll")}</option>
+                        <option value="not_set">{t("maintenanceUi.itpStatusNotSet")}</option>
+                        <option value="expired">{t("maintenanceUi.itpStatusExpired")}</option>
+                        <option value="expiring_30">{t("maintenanceUi.itpStatusExpiring30")}</option>
+                        <option value="ok">{t("maintenanceUi.itpStatusOk")}</option>
                       </select>
                     </label>
                     <div className="flex items-end">
@@ -2784,7 +2773,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
                       >
-                        Clear ITP filters
+                        {t("maintenanceUi.clearItpFilters")}
                       </button>
                     </div>
                   </div>
@@ -3004,7 +2993,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
             )}
 
             <div id="itp-overview-table" className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">ITP overview (all cars)</h3>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">{t("maintenanceUi.itpTableTitle")}</h3>
               {(() => {
                 const now = Date.now();
                 const list = (cars || [])
@@ -3033,11 +3022,11 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                     <table className="w-full min-w-[720px]">
                       <thead>
                         <tr className="bg-slate-50 text-left">
-                          <th className="py-3 px-4 font-semibold text-slate-700">Car</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700">ITP expiry</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700">Last notified</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700">Quick edit</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">{t("maintenanceUi.itpColCar")}</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">{t("maintenanceUi.itpColExpiry")}</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">{t("maintenanceUi.itpColStatus")}</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">{t("maintenanceUi.itpColLastNotified")}</th>
+                          <th className="py-3 px-4 font-semibold text-slate-700">{t("maintenanceUi.itpColQuickEdit")}</th>
                         </tr>
                       </thead>
                       <tbody className="text-slate-800">
@@ -3054,7 +3043,11 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                                   ? "bg-amber-100 text-amber-800"
                                   : "bg-emerald-100 text-emerald-800";
                           const label =
-                            days == null ? "Not set" : days < 0 ? `Expired ${Math.abs(days)} day(s) ago` : `${days} day(s) left`;
+                            days == null
+                              ? t("maintenanceUi.itpLabelNotSet")
+                              : days < 0
+                                ? t("maintenanceUi.itpLabelExpiredDaysAgo", { days: Math.abs(days) })
+                                : t("maintenanceUi.itpLabelDaysLeft", { days });
                           return (
                             <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors">
                               <td className="py-3 px-4 whitespace-nowrap">{c.brand} {c.registrationNumber}</td>
@@ -3080,14 +3073,14 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                                   }}
                                   className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100"
                                 >
-                                  Edit
+                                  {t("maintenanceUi.edit")}
                                 </button>
                               </td>
                             </tr>
                           );
                         })}
                         {list.length === 0 && (
-                          <tr><td colSpan={5} className="py-10 px-4 text-center text-slate-500">No cars match these ITP filters.</td></tr>
+                          <tr><td colSpan={5} className="py-10 px-4 text-center text-slate-500">{t("maintenanceUi.itpNoMatch")}</td></tr>
                         )}
                       </tbody>
                     </table>
