@@ -152,6 +152,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         else if (id == R.id.nav_company_settings) showFragment(new CompanySettingsFragment());
         else if (id == R.id.nav_available_cars) showFragment(new AvailableCarsFragment());
         else if (id == R.id.nav_my_reservations) showFragment(new MyReservationsFragment());
+        else if (id == R.id.nav_glovebox) showFragment(new GloveboxFragment());
         else if (id == R.id.nav_incidents) showFragment(new IncidentsFragment());
         else if (id == R.id.nav_booking_calendar) showFragment(BookingCalendarFragment.newInstance(false));
         else if (id == R.id.nav_fleet_calendar) showFragment(BookingCalendarFragment.newInstance(true));

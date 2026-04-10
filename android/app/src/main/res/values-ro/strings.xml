@@ -83,9 +83,21 @@
     <string name="nav_fleet_calendar">Calendar flotă</string>
     <string name="nav_available_cars">Mașini disponibile</string>
     <string name="nav_my_reservations">Rezervările mele</string>
+    <string name="nav_glovebox">Glovebox</string>
     <string name="nav_incidents">Incidente</string>
     <string name="nav_booking_calendar">Calendar rezervări</string>
     <string name="nav_driving_licence">Profil / permis</string>
+
+    <string name="glovebox_title">Glovebox</string>
+    <string name="glovebox_loading">Se încarcă glovebox…</string>
+    <string name="glovebox_no_active">Nu există o rezervare activă.\nPornește o rezervare pentru a accesa documentele digitale.</string>
+    <string name="glovebox_vehicle">Vehicul</string>
+    <string name="glovebox_itp_expires">ITP expiră</string>
+    <string name="glovebox_rca_expires">RCA expiră</string>
+    <string name="glovebox_vignette_expires">Rovinietă expiră</string>
+    <string name="glovebox_open_rca">Deschide document RCA</string>
+    <string name="glovebox_open_broker">Deschide broker (reînnoire)</string>
+    <string name="glovebox_missing_doc">Document indisponibil.</string>
 
     <string name="brand_name">FleetShare</string>
     <string name="brand_word_fleet">Fleet</string>

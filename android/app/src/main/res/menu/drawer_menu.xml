@@ -14,6 +14,7 @@
     </group>
     <item android:id="@+id/nav_available_cars" android:title="@string/nav_available_cars" />
     <item android:id="@+id/nav_my_reservations" android:title="@string/nav_my_reservations" />
+    <item android:id="@+id/nav_glovebox" android:title="@string/nav_glovebox" />
     <item android:id="@+id/nav_incidents" android:title="@string/nav_incidents" />
     <item android:id="@+id/nav_booking_calendar" android:title="@string/nav_booking_calendar" />
     <item android:id="@+id/nav_driving_licence" android:title="@string/nav_driving_licence" />

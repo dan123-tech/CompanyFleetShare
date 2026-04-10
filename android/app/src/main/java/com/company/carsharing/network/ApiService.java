@@ -12,6 +12,7 @@ import com.company.carsharing.models.Member;
 import com.company.carsharing.models.Reservation;
 import com.company.carsharing.models.SessionResponse;
 import com.company.carsharing.models.IncidentReport;
+import com.company.carsharing.models.GloveboxActiveResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -124,4 +125,8 @@ public interface ApiService {
             @Part("description") RequestBody description,
             @Part List<MultipartBody.Part> files
     );
+
+    // Glovebox (digital documents for active reservation)
+    @GET("api/glovebox/active")
+    Call<GloveboxActiveResponse> getGloveboxActive();
 }

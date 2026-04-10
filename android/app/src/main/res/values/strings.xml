@@ -84,9 +84,22 @@
     <string name="nav_fleet_calendar">Fleet calendar</string>
     <string name="nav_available_cars">Available Cars</string>
     <string name="nav_my_reservations">My Reservations</string>
+    <string name="nav_glovebox">Glovebox</string>
     <string name="nav_incidents">Incidents</string>
     <string name="nav_booking_calendar">Booking calendar</string>
     <string name="nav_driving_licence">Profile / Driving licence</string>
+
+    <!-- Glovebox -->
+    <string name="glovebox_title">Glovebox</string>
+    <string name="glovebox_loading">Loading glovebox…</string>
+    <string name="glovebox_no_active">No active reservation.\nStart a reservation to access your digital documents.</string>
+    <string name="glovebox_vehicle">Vehicle</string>
+    <string name="glovebox_itp_expires">ITP expires</string>
+    <string name="glovebox_rca_expires">RCA expires</string>
+    <string name="glovebox_vignette_expires">Vignette expires</string>
+    <string name="glovebox_open_rca">Open RCA document</string>
+    <string name="glovebox_open_broker">Open broker renewal</string>
+    <string name="glovebox_missing_doc">Document not available.</string>
 
     <!-- Brand / auth -->
     <string name="brand_name">FleetShare</string>
