@@ -64,6 +64,6 @@
     "tailwindcss": "^4",
     "typescript": "~5.9.3",
     "webpack-obfuscator": "^3.6.0",
-    "wrangler": "^4.80.0"
+    "wrangler": "^4.81.1"
   }
 }
