@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm ci --legacy-peer-deps",
+  "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "buildCommand": "prisma migrate deploy && npm run build"
 }
