@@ -9,6 +9,7 @@ import { getProvider, getLayerTable, getStoredCredentials, LAYERS, PROVIDERS } f
 import { listSqlServerCars, createSqlServerCar } from "@/lib/connectors/sql-server-cars";
 import { requireCompany, requireAdmin, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
+import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
 
 const FUEL_TYPES = ["Benzine", "Diesel", "Electric", "Hybrid"];
 const YEAR_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -108,7 +109,7 @@ export async function GET(request) {
         lastServiceYearMonth: c.lastServiceYearMonth ?? null,
         itpExpiresAt: c.itpExpiresAt ?? null,
         rcaExpiresAt: c.rcaExpiresAt ?? null,
-        rcaDocumentUrl: c.rcaDocumentUrl ?? null,
+        rcaDocumentUrl: rcaDocumentUrlForClient(c.id, c.rcaDocumentUrl),
         rcaDocumentContentType: c.rcaDocumentContentType ?? null,
         vignetteExpiresAt: c.vignetteExpiresAt ?? null,
         _count: c._count,

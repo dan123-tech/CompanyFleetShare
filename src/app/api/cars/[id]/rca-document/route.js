@@ -1,10 +1,11 @@
 /**
- * POST /api/cars/[id]/rca-document — admin uploads RCA as PDF or image (public URL + content type on Car).
+ * POST /api/cars/[id]/rca-document — admin uploads RCA as PDF or image (Blob or local disk; DB + content type on Car).
  */
 import { requireAdmin, errorResponse, jsonResponse } from "@/lib/api-helpers";
 import { getCarById, updateCar } from "@/lib/cars";
 import { persistGloveboxPublicDocument } from "@/lib/glovebox-storage";
 import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
+import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -119,18 +120,48 @@ export async function POST(request, { params }) {
   const resolved = resolveGloveboxFileMeta(file, buf);
   if ("error" in resolved) return errorResponse(resolved.error, 422);
 
-  const url = await persistGloveboxPublicDocument(buf, {
-    companyId: out.session.companyId,
-    carId,
-    filename: file.name || resolved.defaultName,
-    contentType: resolved.contentType,
-  });
+  let url;
+  try {
+    url = await persistGloveboxPublicDocument(buf, {
+      companyId: out.session.companyId,
+      carId,
+      filename: file.name || resolved.defaultName,
+      contentType: resolved.contentType,
+    });
+  } catch (e) {
+    const msg = e?.message || String(e);
+    console.error("[rca-document] persist failed:", msg);
+    if (msg.startsWith("MISSING_BLOB_TOKEN")) {
+      return errorResponse(
+        "File storage is not configured for this server (missing BLOB_READ_WRITE_TOKEN). Link a Vercel Blob store or set the token on your host, then redeploy.",
+        503
+      );
+    }
+    if (msg.startsWith("BLOB_ACCESS_MISMATCH")) {
+      return errorResponse(
+        "Blob storage rejected the upload (wrong token or store). Check that BLOB_READ_WRITE_TOKEN matches your project’s Blob store.",
+        502
+      );
+    }
+    if (msg.includes("Vercel Blob upload failed")) {
+      return errorResponse("Could not upload file to storage. Try again or check Blob configuration.", 502);
+    }
+    return errorResponse("Could not save the uploaded file.", 500);
+  }
 
-  await updateCar(carId, out.session.companyId, {
-    rcaDocumentUrl: url,
-    rcaDocumentContentType: resolved.contentType,
-    rcaLastNotifiedAt: null,
-  });
+  try {
+    await updateCar(carId, out.session.companyId, {
+      rcaDocumentUrl: url,
+      rcaDocumentContentType: resolved.contentType,
+      rcaLastNotifiedAt: null,
+    });
+  } catch (e) {
+    console.error("[rca-document] updateCar failed:", e?.message || e);
+    return errorResponse(
+      "File uploaded but the database could not be updated. Ensure tenant migrations are applied (Car.rcaDocumentUrl).",
+      500
+    );
+  }
 
-  return jsonResponse({ ok: true, rcaDocumentUrl: url });
+  return jsonResponse({ ok: true, rcaDocumentUrl: rcaDocumentUrlForClient(carId, url) });
 }

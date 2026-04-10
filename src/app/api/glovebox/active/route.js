@@ -1,8 +1,9 @@
 /**
  * GET /api/glovebox/active — documents for the current user's active reservation vehicle (digital glovebox).
  */
-import { requireCompany, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireCompany, jsonResponse } from "@/lib/api-helpers";
 import { getTenantPrisma } from "@/lib/tenant-db";
+import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
 
 export async function GET() {
   const out = await requireCompany();
@@ -47,7 +48,7 @@ export async function GET() {
       registrationNumber: c.registrationNumber,
       itpExpiresAt: c.itpExpiresAt,
       rcaExpiresAt: c.rcaExpiresAt,
-      rcaDocumentUrl: c.rcaDocumentUrl,
+      rcaDocumentUrl: rcaDocumentUrlForClient(c.id, c.rcaDocumentUrl),
       rcaDocumentContentType: c.rcaDocumentContentType ?? null,
       vignetteExpiresAt: c.vignetteExpiresAt,
     },

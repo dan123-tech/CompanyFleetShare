@@ -11,6 +11,7 @@ import { getSqlServerCarById, updateSqlServerCar, deleteSqlServerCar } from "@/l
 import { requireCompany, requireAdmin, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { getTenantPrisma } from "@/lib/tenant-db";
+import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
 import { sendItpExpiryAdminEmail, sendRcaExpiryAdminEmail } from "@/lib/email";
 
 const FUEL_TYPES = ["Benzine", "Diesel", "Electric", "Hybrid"];
@@ -106,7 +107,7 @@ export async function GET(_request, { params }) {
     lastServiceYearMonth: car.lastServiceYearMonth ?? null,
       itpExpiresAt: car.itpExpiresAt ?? null,
       rcaExpiresAt: car.rcaExpiresAt ?? null,
-      rcaDocumentUrl: car.rcaDocumentUrl ?? null,
+      rcaDocumentUrl: rcaDocumentUrlForClient(car.id, car.rcaDocumentUrl),
       rcaDocumentContentType: car.rcaDocumentContentType ?? null,
       vignetteExpiresAt: car.vignetteExpiresAt ?? null,
     ...(canSeeHistory && {
@@ -288,7 +289,11 @@ export async function PATCH(request, { params }) {
     entityId: id,
     meta: { before: carBefore ? { status: carBefore.status, km: carBefore.km } : null, after: data },
   });
-  return jsonResponse(car ?? { id });
+  if (!car) return jsonResponse({ id });
+  return jsonResponse({
+    ...car,
+    rcaDocumentUrl: rcaDocumentUrlForClient(car.id, car.rcaDocumentUrl),
+  });
 }
 
 export async function DELETE(_request, { params }) {
