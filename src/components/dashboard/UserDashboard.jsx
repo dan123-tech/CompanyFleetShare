@@ -633,7 +633,10 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                   {history.slice(0, 10).map((r) => (
                     <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
                       <td className="py-4 px-4">{formatDate(r.startDate)}</td>
-                      <td className="py-4 px-4">{r.car?.brand} {r.car?.registrationNumber}</td>
+                      <td className="py-4 px-4">
+                        {r.car?.brand} {r.car?.registrationNumber}
+                        {r.car?.vehicleCategory ? ` · ${r.car.vehicleCategory}` : ""}
+                      </td>
                       <td className="py-4 px-4">
                         <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${statusClass(r.status)}`}>
                           {r.status}
@@ -1052,7 +1055,10 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                   {reservations.map((r) => (
                     <Fragment key={r.id}>
                       <tr className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
-                        <td className="py-4 px-4">{r.car?.brand} {r.car?.registrationNumber}</td>
+                        <td className="py-4 px-4">
+                          {r.car?.brand} {r.car?.registrationNumber}
+                          {r.car?.vehicleCategory ? ` · ${r.car.vehicleCategory}` : ""}
+                        </td>
                         <td className="py-4 px-4">{formatDate(r.startDate)}</td>
                         <td className="py-4 px-4">
                           <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${statusClass(r.status)}`}>
@@ -1177,7 +1183,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                   {availableCars.map((c) => (
                     <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
                       <td className="py-4 px-4">{c.brand}</td>
-                      <td className="py-4 px-4">{c.registrationNumber}</td>
+                      <td className="py-4 px-4">{c.registrationNumber}{c.vehicleCategory ? ` · ${c.vehicleCategory}` : ""}</td>
                       <td className="py-4 px-4">{formatNumber(c.km ?? 0, { maximumFractionDigits: 0 })} km</td>
                       <td className="py-4 px-4 hidden sm:table-cell">
                         <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800">Available</span>
@@ -1228,7 +1234,7 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                   {unavailableCars.map((c) => (
                     <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
                       <td className="py-4 px-4">{c.brand}</td>
-                      <td className="py-4 px-4">{c.registrationNumber}</td>
+                      <td className="py-4 px-4">{c.registrationNumber}{c.vehicleCategory ? ` · ${c.vehicleCategory}` : ""}</td>
                       <td className="py-4 px-4">{formatNumber(c.km ?? 0, { maximumFractionDigits: 0 })} km</td>
                       <td className="py-4 px-4">
                         <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${statusClass(c.status)}`}>
@@ -1288,7 +1294,10 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                   {history.map((r) => (
                     <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
                       <td className="py-4 px-4">{formatDate(r.startDate)}</td>
-                      <td className="py-4 px-4">{r.car?.brand} {r.car?.registrationNumber}</td>
+                      <td className="py-4 px-4">
+                        {r.car?.brand} {r.car?.registrationNumber}
+                        {r.car?.vehicleCategory ? ` · ${r.car.vehicleCategory}` : ""}
+                      </td>
                       <td className="py-4 px-4">{r.purpose || "—"}</td>
                       <td className="py-4 px-4">
                         <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${statusClass(r.status)}`}>
@@ -1699,7 +1708,9 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                       {incidents.map((r) => (
                         <tr key={r.id} className="border-t border-slate-100">
                           <td className="py-3 pr-3 whitespace-nowrap">{new Date(r.occurredAt || r.createdAt).toLocaleString()}</td>
-                          <td className="py-3 pr-3 whitespace-nowrap">{[r.car?.brand, r.car?.registrationNumber].filter(Boolean).join(" ")}</td>
+                          <td className="py-3 pr-3 whitespace-nowrap">
+                            {[r.car?.brand, r.car?.registrationNumber, r.car?.vehicleCategory ? `(${r.car.vehicleCategory})` : null].filter(Boolean).join(" ")}
+                          </td>
                           <td className="py-3 pr-3">{r.title}</td>
                           <td className="py-3 pr-3 whitespace-nowrap">
                             <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800">

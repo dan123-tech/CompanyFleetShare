@@ -1605,6 +1605,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                   <tr className="bg-slate-50 text-left">
                     <th className="py-4 px-4 font-semibold text-slate-700">Brand</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Registration</th>
+                    <th className="py-4 px-4 font-semibold text-slate-700">Category</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Fuel</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Km</th>
                     <th className="py-4 px-4 font-semibold text-slate-700">Consumption</th>
@@ -1622,6 +1623,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                       <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
                         <td className="py-4 px-4">{c.brand}</td>
                         <td className="py-4 px-4">{c.registrationNumber}</td>
+                        <td className="py-4 px-4 text-slate-600 tabular-nums">{c.vehicleCategory || "OTHER"}</td>
                         <td className="py-4 px-4"><FuelTypeBadge fuelType={c.fuelType} /></td>
                         <td className="py-4 px-4">{formatNumber(c.km ?? 0, { maximumFractionDigits: 0 })}</td>
                         <td className="py-4 px-4">
@@ -2522,7 +2524,10 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                 <tbody className="text-slate-800">
                   {filteredHistory.map((r) => (
                     <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-4">{r.car?.brand} {r.car?.registrationNumber}</td>
+                      <td className="py-4 px-4">
+                        {r.car?.brand} {r.car?.registrationNumber}
+                        {r.car?.vehicleCategory ? ` · ${r.car.vehicleCategory}` : ""}
+                      </td>
                       <td className="py-4 px-4">{r.user?.name || r.user?.email || "—"}</td>
                       <td className="py-4 px-4">{formatDate(r.startDate)}</td>
                       <td className="py-4 px-4">

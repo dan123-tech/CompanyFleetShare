@@ -361,6 +361,7 @@
     "colRank": "#",
     "colMakeModel": "Marcă / model",
     "colPlate": "Număr",
+    "colCategory": "Categorie",
     "colFuel": "Combustibil",
     "colConsumption": "Consum",
     "noCars": "Nicio mașină",

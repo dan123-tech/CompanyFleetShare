@@ -361,6 +361,7 @@
     "colRank": "#",
     "colMakeModel": "Make / model",
     "colPlate": "Plate",
+    "colCategory": "Category",
     "colFuel": "Fuel type",
     "colConsumption": "Consumption",
     "noCars": "No cars",

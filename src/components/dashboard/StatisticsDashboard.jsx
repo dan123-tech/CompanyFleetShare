@@ -204,9 +204,9 @@ export default function StatisticsDashboard({ reservations = [], company, users 
     y = addSectionTitle(doc, y, t("stats.pdfCostLeader"));
     autoTable(doc, {
       startY: y,
-      head: [[t("stats.colRank"), t("stats.colMakeModel"), t("stats.colPlate"), t("stats.colKm"), t("stats.colConsumption"), t("stats.colEstCost")]],
+      head: [[t("stats.colRank"), t("stats.colMakeModel"), t("stats.colPlate"), t("stats.colCategory"), t("stats.colKm"), t("stats.colConsumption"), t("stats.colEstCost")]],
       body: s.efficiencyLeaderboard.map((row, i) => [
-        i + 1, row.brandModel, row.registrationNumber,
+        i + 1, row.brandModel, row.registrationNumber, row.vehicleCategory || "OTHER",
         `${row.km.toLocaleString(locStr)} km`, row.consumptionDisplay,
         hasFuelPrices ? formatCurrency(row.fuelCost) : "—",
       ]),
@@ -219,7 +219,7 @@ export default function StatisticsDashboard({ reservations = [], company, users 
     autoTable(doc, {
       startY: y,
       head: [[t("stats.colMakeModel"), t("stats.colPlate"), t("stats.colKm"), t("stats.colReservations")]],
-      body: s.carUsage.map((row) => [row.brandModel, row.plate, `${row.km.toLocaleString(locStr)} km`, String(row.reservations)]),
+      body: s.carUsage.map((row) => [row.brandModel, `${row.plate} · ${row.vehicleCategory || "OTHER"}`, `${row.km.toLocaleString(locStr)} km`, String(row.reservations)]),
       theme: "grid", headStyles: HEAD, bodyStyles: BODY, alternateRowStyles: ALT, margin: MARGIN,
     });
     y = doc.lastAutoTable.finalY + 10;
@@ -392,19 +392,21 @@ export default function StatisticsDashboard({ reservations = [], company, users 
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colRank")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colMakeModel")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colPlate")}</th>
+                <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colCategory")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colFuel")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colConsumption")}</th>
               </tr>
             </thead>
             <tbody className="text-slate-800">
               {stats.efficiencyByConsumption.length === 0 ? (
-                <tr><td colSpan={5} className="py-10 px-4 text-center text-slate-500">{t("stats.noCars")}</td></tr>
+                <tr><td colSpan={6} className="py-10 px-4 text-center text-slate-500">{t("stats.noCars")}</td></tr>
               ) : (
                 stats.efficiencyByConsumption.map((row, i) => (
                   <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50/80">
                     <td className="py-4 px-4">{i + 1}</td>
                     <td className="py-4 px-4 font-medium">{row.brandModel}</td>
                     <td className="py-4 px-4 text-slate-600 tabular-nums">{row.registrationNumber}</td>
+                    <td className="py-4 px-4 text-slate-600 tabular-nums">{row.vehicleCategory || "OTHER"}</td>
                     <td className="py-4 px-4">
                       <FuelTypeBadge fuelType={row.fuelType} />
                     </td>
@@ -514,6 +516,7 @@ export default function StatisticsDashboard({ reservations = [], company, users 
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colRank")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colMakeModel")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colPlate")}</th>
+                <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colCategory")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colFuelShort")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colKm")}</th>
                 <th className="py-4 px-4 font-semibold text-slate-700">{t("stats.colConsumption")}</th>
@@ -523,7 +526,7 @@ export default function StatisticsDashboard({ reservations = [], company, users 
             <tbody className="text-slate-800">
               {stats.efficiencyLeaderboard.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 px-4 text-center text-slate-500">{t("stats.noData")}</td>
+                  <td colSpan={8} className="py-10 px-4 text-center text-slate-500">{t("stats.noData")}</td>
                 </tr>
               ) : (
                 stats.efficiencyLeaderboard.map((row, i) => (
@@ -531,6 +534,7 @@ export default function StatisticsDashboard({ reservations = [], company, users 
                     <td className="py-4 px-4">{i + 1}</td>
                     <td className="py-4 px-4 font-medium">{row.brandModel}</td>
                     <td className="py-4 px-4 text-slate-600 tabular-nums">{row.registrationNumber}</td>
+                    <td className="py-4 px-4 text-slate-600 tabular-nums">{row.vehicleCategory || "OTHER"}</td>
                     <td className="py-4 px-4"><FuelTypeBadge fuelType={row.fuelType} /></td>
                     <td className="py-4 px-4">{row.km.toLocaleString(locale === "ro" ? "ro-RO" : "en-GB")} km</td>
                     <td className="py-4 px-4">{row.consumptionDisplay}</td>

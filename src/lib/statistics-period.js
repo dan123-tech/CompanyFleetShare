@@ -147,6 +147,7 @@ export function computeStatsForPeriod(period, ctx) {
       name: `${carBrandModel(c)}\n${c.registrationNumber ?? ""}`,
       brandModel: carBrandModel(c),
       plate: c.registrationNumber ?? "—",
+      vehicleCategory: c.vehicleCategory ?? "OTHER",
       km: byCar[c.id] ?? 0,
       reservations: reservationsForTopUsers.filter((r) => (r.carId || r.car?.id) === c.id).length,
     }))
@@ -162,6 +163,7 @@ export function computeStatsForPeriod(period, ctx) {
       id: c.id,
       brandModel: carBrandModel(c),
       registrationNumber: c.registrationNumber ?? "—",
+      vehicleCategory: c.vehicleCategory ?? "OTHER",
       fuelType: c.fuelType ?? "Benzine",
       consumptionDisplay: formatCarConsumption(c, defaultL100, defaultKwh100),
       km: byCar[c.id] ?? 0,
@@ -201,6 +203,7 @@ export function computeStatsForPeriod(period, ctx) {
         id: c.id,
         brandModel: carBrandModel(c),
         registrationNumber: c.registrationNumber ?? "—",
+        vehicleCategory: c.vehicleCategory ?? "OTHER",
         fuelType: ft,
         consumption,
         consumptionLabel: formatCarConsumption(c, defaultL100, defaultKwh100),
