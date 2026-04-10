@@ -83,15 +83,15 @@
     <string name="nav_fleet_calendar">Calendar flotă</string>
     <string name="nav_available_cars">Mașini disponibile</string>
     <string name="nav_my_reservations">Rezervările mele</string>
-    <string name="nav_glovebox">Glovebox</string>
+    <string name="nav_glovebox">Torpedou</string>
     <string name="nav_reports">Rapoarte</string>
     <string name="nav_incidents">Incidente</string>
     <string name="nav_booking_calendar">Calendar rezervări</string>
     <string name="nav_driving_licence">Profil / permis</string>
     <string name="nav_maintenance">Jurnal mentenanță</string>
 
-    <string name="glovebox_title">Glovebox</string>
-    <string name="glovebox_loading">Se încarcă glovebox…</string>
+    <string name="glovebox_title">Torpedou</string>
+    <string name="glovebox_loading">Se încarcă torpedoul…</string>
     <string name="glovebox_no_active">Nu există o rezervare activă.\nPornește o rezervare pentru a accesa documentele digitale.</string>
     <string name="glovebox_vehicle">Vehicul</string>
     <string name="glovebox_itp_expires">ITP expiră</string>
@@ -207,7 +207,7 @@
     <string name="incidents_title">Incidente</string>
     <string name="incidents_form_hint">Raportează un accident, zgârietură, daună sau orice problemă. Adaugă poze/documente și trimite.</string>
     <string name="incidents_vehicle">Vehicul</string>
-    <string name="incidents_gravity">Gravitate (A/B/C)</string>
+    <string name="incidents_gravity">Severitate (A/B/C)</string>
     <string name="incidents_title_field">Titlu</string>
     <string name="incidents_location">Locație (opțional)</string>
     <string name="incidents_description">Descriere (opțional)</string>
@@ -219,6 +219,9 @@
     <string name="incidents_empty">Nu ai raportat incidente încă.</string>
     <string name="incidents_require_car_title">Selectează o mașină și introdu un titlu.</string>
     <string name="incidents_submitted">Incident trimis.</string>
+    <string name="incident_severity_a">A — Critic / mare (mașina poate deveni indisponibilă)</string>
+    <string name="incident_severity_b">B — Mediu</string>
+    <string name="incident_severity_c">C — Scăzut</string>
 
     <string name="dialog_car_label">Mașină</string>
     <string name="dialog_schedule_title">Început și sfârșit (opțional)</string>

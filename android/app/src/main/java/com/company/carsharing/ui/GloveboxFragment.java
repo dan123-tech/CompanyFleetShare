@@ -18,9 +18,11 @@ import com.company.carsharing.databinding.FragmentGloveboxBinding;
 import com.company.carsharing.models.GloveboxActiveResponse;
 import com.company.carsharing.network.ApiService;
 import com.company.carsharing.network.RetrofitClient;
+import com.company.carsharing.util.DateParseUtil;
 import com.company.carsharing.util.FileOpenUtil;
 
 import java.io.File;
+import java.util.Locale;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -100,9 +102,9 @@ public class GloveboxFragment extends Fragment {
         });
     }
 
-    private static String labelLine(int labelRes, String value) {
-        String v = value == null || value.trim().isEmpty() ? "—" : value;
-        return v;
+    private static String formatExpiry(String raw, Locale loc) {
+        if (raw == null || raw.trim().isEmpty()) return "—";
+        return DateParseUtil.formatIsoForDisplay(raw.trim(), loc);
     }
 
     private void render(GloveboxActiveResponse data) {
@@ -113,9 +115,10 @@ public class GloveboxFragment extends Fragment {
                 : null;
         binding.gloveboxVehicleValue.setText(cat != null ? (label + " · " + cat) : label);
 
-        String itp = getString(R.string.glovebox_itp_expires) + ": " + (c.getItpExpiresAt() != null ? c.getItpExpiresAt() : "—");
-        String rca = getString(R.string.glovebox_rca_expires) + ": " + (c.getRcaExpiresAt() != null ? c.getRcaExpiresAt() : "—");
-        String vignette = getString(R.string.glovebox_vignette_expires) + ": " + (c.getVignetteExpiresAt() != null ? c.getVignetteExpiresAt() : "—");
+        Locale loc = getResources().getConfiguration().getLocales().get(0);
+        String itp = getString(R.string.glovebox_itp_expires) + ": " + formatExpiry(c.getItpExpiresAt(), loc);
+        String rca = getString(R.string.glovebox_rca_expires) + ": " + formatExpiry(c.getRcaExpiresAt(), loc);
+        String vignette = getString(R.string.glovebox_vignette_expires) + ": " + formatExpiry(c.getVignetteExpiresAt(), loc);
         binding.gloveboxItp.setText(itp);
         binding.gloveboxRca.setText(rca);
         binding.gloveboxVignette.setText(vignette);

@@ -42,7 +42,7 @@ public class IncidentsAdapter extends RecyclerView.Adapter<IncidentsAdapter.VH> 
                 : safe(r.getCarId());
         String status = safe(r.getStatus());
         String whenRaw = safe(r.getOccurredAt() != null ? r.getOccurredAt() : r.getCreatedAt());
-        String when = DateTimeUi.format(whenRaw);
+        String when = DateTimeUi.format(whenRaw, h.itemView.getContext());
         h.sub.setText((car.isEmpty() ? "—" : car) + " • " + (status.isEmpty() ? "SUBMITTED" : status) + " • " + (when.isEmpty() ? "—" : when));
     }
 

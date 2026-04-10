@@ -39,7 +39,7 @@ public class ReportsFragment extends Fragment implements HistoryAdapter.OnHistor
         binding.reportsHistoryList.setAdapter(adapter);
         binding.reportsOpenStatistics.setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).showFragment(new StatisticsFragment());
+                ((MainActivity) getActivity()).showFragment(new StatisticsFragment(), R.id.nav_statistics);
             }
         });
         load();

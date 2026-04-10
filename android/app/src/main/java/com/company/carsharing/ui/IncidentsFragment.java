@@ -41,6 +41,7 @@ public class IncidentsFragment extends Fragment {
     private FragmentIncidentsBinding binding;
     private final List<Uri> pickedFiles = new ArrayList<>();
     private final Map<String, String> carLabelToId = new HashMap<>();
+    /** Kept in sync when user picks from the vehicle dropdown; submit also resolves from field text. */
     private String selectedCarId = "";
 
     private IncidentsAdapter adapter;
@@ -86,19 +87,32 @@ public class IncidentsFragment extends Fragment {
 
     private void setupSeverityDropdown() {
         List<String> items = new ArrayList<>();
-        items.add("A — Critical / High (car becomes unavailable)");
-        items.add("B — Medium");
-        items.add("C — Low");
+        items.add(getString(R.string.incident_severity_a));
+        items.add(getString(R.string.incident_severity_b));
+        items.add(getString(R.string.incident_severity_c));
         ArrayAdapter<String> ad = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, items);
         binding.incSeverity.setAdapter(ad);
+        binding.incSeverity.setThreshold(0);
         binding.incSeverity.setText(items.get(2), false);
     }
 
     private String currentSeverityLetter() {
         String v = binding.incSeverity.getText() != null ? binding.incSeverity.getText().toString().trim() : "";
-        if (v.startsWith("A")) return "A";
-        if (v.startsWith("B")) return "B";
+        if (v.startsWith("A") || v.startsWith("a")) return "A";
+        if (v.startsWith("B") || v.startsWith("b")) return "B";
         return "C";
+    }
+
+    /** Resolves car id from the vehicle field (dropdown selection or exact label text). */
+    private String resolveCarIdFromField() {
+        String typed = binding.incVehicle.getText() != null ? binding.incVehicle.getText().toString().trim() : "";
+        if (typed.isEmpty()) return "";
+        String id = carLabelToId.get(typed);
+        if (id != null) return id;
+        for (Map.Entry<String, String> e : carLabelToId.entrySet()) {
+            if (e.getKey().equalsIgnoreCase(typed)) return e.getValue();
+        }
+        return "";
     }
 
     private void loadCarsForDropdown() {
@@ -121,9 +135,12 @@ public class IncidentsFragment extends Fragment {
                         }
                         ArrayAdapter<String> ad = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, labels);
                         binding.incVehicle.setAdapter(ad);
+                        binding.incVehicle.setThreshold(0);
                         binding.incVehicle.setOnItemClickListener((parent, view, position, id) -> {
-                            String label = labels.get(position);
-                            selectedCarId = carLabelToId.get(label);
+                            if (position >= 0 && position < labels.size()) {
+                                String label = labels.get(position);
+                                selectedCarId = carLabelToId.get(label) != null ? carLabelToId.get(label) : "";
+                            }
                         });
                     }
 
@@ -166,6 +183,10 @@ public class IncidentsFragment extends Fragment {
     private void submitIncident() {
         if (binding == null) return;
         String title = binding.incTitle.getText() != null ? binding.incTitle.getText().toString().trim() : "";
+        String carIdResolved = resolveCarIdFromField();
+        if (!carIdResolved.isEmpty()) {
+            selectedCarId = carIdResolved;
+        }
         if (selectedCarId == null || selectedCarId.trim().isEmpty() || title.isEmpty()) {
             showMessage(getString(R.string.incidents_require_car_title));
             return;
@@ -196,7 +217,9 @@ public class IncidentsFragment extends Fragment {
                             binding.incTitle.setText("");
                             binding.incLocation.setText("");
                             binding.incDescription.setText("");
-                            binding.incSeverity.setText("C — Low", false);
+                            binding.incVehicle.setText("", false);
+                            selectedCarId = "";
+                            binding.incSeverity.setText(getString(R.string.incident_severity_c), false);
                             pickedFiles.clear();
                             binding.incFilesLabel.setText(getString(R.string.incidents_no_files));
                             loadIncidents();

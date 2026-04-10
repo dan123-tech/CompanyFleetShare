@@ -123,11 +123,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void showFragment(Fragment fragment) {
+        showFragment(fragment, 0);
+    }
+
+    /**
+     * @param navigationMenuId drawer item to highlight (e.g. R.id.nav_statistics); 0 to leave selection unchanged
+     */
+    public void showFragment(Fragment fragment, int navigationMenuId) {
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
-        if (drawerEnabled) drawerLayout.closeDrawer(GravityCompat.START);
+        getSupportFragmentManager().executePendingTransactions();
+        if (drawerEnabled) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+            if (navigationMenuId != 0 && navView != null) {
+                MenuItem mi = navView.getMenu().findItem(navigationMenuId);
+                if (mi != null && mi.isVisible()) {
+                    navView.setCheckedItem(navigationMenuId);
+                }
+            }
+        }
     }
 
     public AuthRepository getAuthRepository() {
