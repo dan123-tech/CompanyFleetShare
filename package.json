@@ -60,7 +60,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "javascript-obfuscator": "^5.4.1",
-    "prisma": "^6.19.3",
+    "prisma": "^7.7.0",
     "tailwindcss": "^4",
     "typescript": "~5.9.3",
     "webpack-obfuscator": "^3.6.0",
