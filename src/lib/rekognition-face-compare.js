@@ -1,7 +1,7 @@
 import { CompareFacesCommand, RekognitionClient } from "@aws-sdk/client-rekognition";
 
 /**
- * Optional fallback when the external face session API fails (e.g. broken atob/Redis on that service).
+ * Optional fallback when the external face match / session API fails.
  * Configure AWS_REGION + AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY on Vercel.
  */
 export function isRekognitionFaceCompareConfigured() {

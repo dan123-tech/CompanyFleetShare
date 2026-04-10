@@ -19,11 +19,9 @@ const AI_TIMEOUT_MS = parseInt(
   10
 );
 const AI_MATCH_THRESHOLD = parseFloat(process.env.AI_FACE_MATCH_THRESHOLD || "0.35");
+/** Session-create / session-verify on the remote face service — opt-in only (off by default). */
 const SESSION_FLOW_MODE = String(process.env.AI_FACE_RECOGNITION_USE_SESSION_FLOW || "").toLowerCase();
-const USE_SESSION_FLOW_FALLBACK =
-  SESSION_FLOW_MODE === "true" ||
-  (SESSION_FLOW_MODE !== "false" &&
-    /ai-face-recognition(-nine)?\.vercel\.app/i.test(DEFAULT_AI_URL));
+const USE_SESSION_FLOW_FALLBACK = SESSION_FLOW_MODE === "true";
 
 function shouldTryRekognitionFallback(err) {
   const m = String(err?.message || "").toLowerCase();
@@ -221,14 +219,6 @@ async function trySessionFlow(base, licence, liveScan, controller) {
   }
   if (!createRes.ok) {
     const text = await createRes.text();
-    if (
-      createRes.status === 500 &&
-      text.includes("Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN")
-    ) {
-      throw new Error(
-        "Face validator is missing session storage configuration. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in the ai-face-recognition Vercel project."
-      );
-    }
     throw new Error(`Face session-create returned ${createRes.status}: ${text.slice(0, 200)}`);
   }
   const created = await createRes.json();
@@ -401,7 +391,7 @@ export async function verifyIdentityFaceMatch(licence, liveScan) {
         throw new Error(
           `Face match endpoint not found on ${base} (tried: ${paths.join(
             ", "
-          )}). Session flow fallback is disabled (no Upstash mode).`
+          )}). Session flow fallback is disabled; set AI_FACE_RECOGNITION_USE_SESSION_FLOW=true if your face backend exposes /api/session-create and /api/session-verify.`
         );
       }
       throw new Error(`Face match endpoint not found on ${base} (tried: ${paths.join(", ")})`);

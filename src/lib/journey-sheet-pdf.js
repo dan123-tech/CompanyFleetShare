@@ -1,6 +1,8 @@
 /**
- * Romanian-style journey log (foaie de parcurs) — generated from reservation + release data.
- * Uses the shared branded PDF style (header, sections, footer) from pdf-report.js.
+ * Journey log PDF (foaie de parcurs) — generated from reservation + release data.
+ * - Dates formatted in the user's local timezone (tz param, default Europe/Bucharest).
+ * - Language: "ro" or "en" (lang param).
+ * - No Romanian diacritics — jsPDF built-in fonts don't support them reliably.
  */
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -21,27 +23,116 @@ const LIGHT = [241, 245, 249];
 const GREEN_LIGHT = [240, 253, 244];
 const ORANGE_LIGHT = [255, 247, 237];
 
-function fmtDt(d) {
-  if (!d) return "—";
+// ── Translations ──────────────────────────────────────────────────────────────
+const T = {
+  en: {
+    title: "Journey Sheet",
+    generated: "Generated",
+    driver: "Driver",
+    vehicle: "Vehicle",
+    actualPickup: "Actual departure",
+    actualReturn: "Actual return",
+    totalDuration: "Total duration",
+    kmDriven: "Km driven",
+    sec1: "1. Vehicle & Driver Identification",
+    company: "Company / operator",
+    driverName: "Driver",
+    driverEmail: "Driver email",
+    vehicleLabel: "Vehicle",
+    regNumber: "Registration no.",
+    purpose: "Trip purpose",
+    reservationId: "Reservation ID",
+    sec2: "2. Trip Period",
+    colIndicator: "Indicator",
+    colPlanned: "Planned",
+    colActual: "Actual",
+    plannedDep: "Planned departure",
+    plannedRet: "Planned return",
+    plannedDur: "Planned duration",
+    sec3: "3. Mileage",
+    colValue: "Value",
+    odomStart: "Odometer at departure",
+    odomEnd: "Odometer at return",
+    kmTrip: "Km driven on this trip",
+    sec4: "4. Confirmation & Signatures",
+    sigDriver: "Driver",
+    sigManager: "Fleet manager",
+    sigApproved: "Verified / Approved",
+    sigLine: "Signature",
+    noteLabel: "Note:",
+    noteText: (startDate, endDate, tz) =>
+      `Reservation period: ${startDate} \u2013 ${endDate}. Actual pickup and return times are recorded automatically by the system when the corresponding buttons are pressed in the app. Time shown uses timezone: ${tz}. Data sourced from FleetShare reservation system. Retain this document for expense justification per applicable tax legislation.`,
+  },
+  ro: {
+    title: "Foaie de parcurs",
+    generated: "Generat",
+    driver: "Conducator auto",
+    vehicle: "Autovehicul",
+    actualPickup: "Plecare efectiva",
+    actualReturn: "Returnare efectiva",
+    totalDuration: "Durata totala deplasare",
+    kmDriven: "Km parcursi",
+    sec1: "1. Identificare vehicul si conducator",
+    company: "Companie / operator",
+    driverName: "Conducator auto",
+    driverEmail: "Email conducator",
+    vehicleLabel: "Autovehicul",
+    regNumber: "Nr. inmatriculare",
+    purpose: "Scopul deplasarii",
+    reservationId: "ID rezervare",
+    sec2: "2. Perioada de deplasare",
+    colIndicator: "Indicator",
+    colPlanned: "Planificat",
+    colActual: "Efectiv",
+    plannedDep: "Plecare planificata",
+    plannedRet: "Returnare planificata",
+    plannedDur: "Durata planificata",
+    sec3: "3. Kilometraj",
+    colValue: "Valoare",
+    odomStart: "Km la predare (odometru la plecare)",
+    odomEnd: "Km la returnare (odometru la sosire)",
+    kmTrip: "Km parcursi in aceasta deplasare",
+    sec4: "4. Confirmare si semnaturi",
+    sigDriver: "Conducator auto",
+    sigManager: "Responsabil flota",
+    sigApproved: "Verificat / Aprobat",
+    sigLine: "Semnatura",
+    noteLabel: "Nota:",
+    noteText: (startDate, endDate, tz) =>
+      `Perioada rezervare: ${startDate} \u2013 ${endDate}. Timpii efectivi de preluare si returnare sunt inregistrati automat de sistem la momentul actionarii butoanelor din aplicatie. Ora afisata corespunde fusului orar al utilizatorului (${tz}). Datele provin din sistemul de rezervari FleetShare. Pastrati acest document pentru justificarea cheltuielilor conform legislatiei fiscale in vigoare.`,
+  },
+};
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function fmtDt(d, tz) {
+  if (!d) return "\u2014";
   const x = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(x.getTime())) return "—";
-  return x.toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short" });
+  if (Number.isNaN(x.getTime())) return "\u2014";
+  try {
+    return x.toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short", timeZone: tz });
+  } catch {
+    return x.toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short" });
+  }
 }
 
-function fmtDate(d) {
-  if (!d) return "—";
+function fmtDate(d, tz) {
+  if (!d) return "\u2014";
   const x = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(x.getTime())) return "—";
-  return x.toLocaleDateString("ro-RO");
+  if (Number.isNaN(x.getTime())) return "\u2014";
+  try {
+    return x.toLocaleDateString("ro-RO", { timeZone: tz });
+  } catch {
+    return x.toLocaleDateString("ro-RO");
+  }
 }
 
 function fmtDuration(from, to) {
-  if (!from || !to) return "—";
+  if (!from || !to) return "\u2014";
   const a = from instanceof Date ? from : new Date(from);
   const b = to instanceof Date ? to : new Date(to);
-  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return "—";
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return "\u2014";
   const diffMs = b.getTime() - a.getTime();
-  if (diffMs < 0) return "—";
+  if (diffMs < 0) return "\u2014";
   const totalMin = Math.round(diffMs / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
@@ -59,7 +150,7 @@ function loadLogoDataUrl() {
   }
 }
 
-function drawSignatureBox(doc, x, y, w, h, label) {
+function drawSignatureBox(doc, x, y, w, h, label, sigLineLabel) {
   doc.setDrawColor(180, 190, 205);
   doc.setLineWidth(0.4);
   doc.roundedRect(x, y, w, h, 2, 2);
@@ -67,18 +158,17 @@ function drawSignatureBox(doc, x, y, w, h, label) {
   doc.setFontSize(7.5);
   doc.setTextColor(...GREY);
   doc.text(label, x + w / 2, y + 6, { align: "center" });
-  // dashed signature line
   doc.setDrawColor(160, 174, 192);
   doc.setLineWidth(0.3);
   const lineY = y + h - 8;
   doc.line(x + 6, lineY, x + w - 6, lineY);
   doc.setFontSize(7);
-  doc.text("Semnătura", x + w / 2, y + h - 3, { align: "center" });
+  doc.text(sigLineLabel, x + w / 2, y + h - 3, { align: "center" });
 }
 
 function drawInfoBadge(doc, x, y, label, value, bgColor) {
   const pageW = doc.internal.pageSize.getWidth();
-  const w = (pageW - 28 - 4) / 2; // two-column layout
+  const w = (pageW - 28 - 4) / 2;
   doc.setFillColor(...bgColor);
   doc.roundedRect(x, y, w, 18, 2, 2, "F");
   doc.setFont("helvetica", "bold");
@@ -88,7 +178,7 @@ function drawInfoBadge(doc, x, y, label, value, bgColor) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...DARK);
-  doc.text(String(value || "—"), x + 6, y + 14);
+  doc.text(String(value || "\u2014"), x + 6, y + 14);
 }
 
 /**
@@ -99,15 +189,17 @@ function drawInfoBadge(doc, x, y, label, value, bgColor) {
  * @param {string} p.vehicleLabel
  * @param {string} p.registrationNumber
  * @param {string} [p.purpose]
- * @param {Date|string} p.startDate       - scheduled start
- * @param {Date|string} p.endDate         - scheduled end
- * @param {Date|string} [p.pickedUpAt]    - actual pickup timestamp
- * @param {Date|string} [p.releasedAt]    - actual release timestamp
+ * @param {Date|string} p.startDate
+ * @param {Date|string} p.endDate
+ * @param {Date|string} [p.pickedUpAt]
+ * @param {Date|string} [p.releasedAt]
  * @param {number} [p.releasedKmUsed]
  * @param {number} [p.releasedOdometerStart]
  * @param {number} [p.releasedOdometerEnd]
  * @param {Date} [p.generatedAt]
  * @param {string} [p.reservationId]
+ * @param {string} [p.tz]   IANA timezone, e.g. "Europe/Bucharest"
+ * @param {"en"|"ro"} [p.lang]
  * @returns {Buffer}
  */
 export function buildJourneySheetPdf(p) {
@@ -115,49 +207,51 @@ export function buildJourneySheetPdf(p) {
   const pageW = doc.internal.pageSize.getWidth();
   const logoDataUrl = loadLogoDataUrl();
 
-  const generatedOn = fmtDt(p.generatedAt || new Date());
+  const tz = p.tz || "Europe/Bucharest";
+  const t = T[p.lang === "ro" ? "ro" : "en"];
+  const generatedOn = `${t.generated}: ${fmtDt(p.generatedAt || new Date(), tz)}`;
   const hasActualTimes = !!(p.pickedUpAt || p.releasedAt);
 
   let y = drawPdfHeader(doc, {
-    title: "Foaie de parcurs",
-    subtitle: `${p.vehicleLabel || "—"} · ${p.registrationNumber || "—"}`,
+    title: t.title,
+    subtitle: `${p.vehicleLabel || "\u2014"} \u00b7 ${p.registrationNumber || "\u2014"}`,
     company: { name: p.companyName || "" },
-    generatedOn: `Generat: ${generatedOn}`,
+    generatedOn,
     logoDataUrl,
   });
 
-  // ── Summary badges (2 cols) ──────────────────────────────────────────────────
+  // ── Summary badges ────────────────────────────────────────────────────────
   const colLeft = 14;
   const colRight = 14 + (pageW - 28 - 4) / 2 + 4;
 
-  drawInfoBadge(doc, colLeft, y, "Conducător auto", p.driverName || "—", LIGHT);
-  drawInfoBadge(doc, colRight, y, "Autovehicul", `${p.vehicleLabel || "—"} | ${p.registrationNumber || "—"}`, LIGHT);
+  drawInfoBadge(doc, colLeft, y, t.driver, p.driverName || "\u2014", LIGHT);
+  drawInfoBadge(doc, colRight, y, t.vehicle, `${p.vehicleLabel || "\u2014"} | ${p.registrationNumber || "\u2014"}`, LIGHT);
   y += 22;
 
-  drawInfoBadge(doc, colLeft, y, "Plecare efectivă", fmtDt(p.pickedUpAt || p.startDate), GREEN_LIGHT);
-  drawInfoBadge(doc, colRight, y, "Returnare efectivă", fmtDt(p.releasedAt || p.endDate), ORANGE_LIGHT);
+  drawInfoBadge(doc, colLeft, y, t.actualPickup, fmtDt(p.pickedUpAt || p.startDate, tz), GREEN_LIGHT);
+  drawInfoBadge(doc, colRight, y, t.actualReturn, fmtDt(p.releasedAt || p.endDate, tz), ORANGE_LIGHT);
   y += 22;
 
   const duration = fmtDuration(p.pickedUpAt || p.startDate, p.releasedAt || p.endDate);
-  const kmTotal = p.releasedKmUsed != null ? `${p.releasedKmUsed} km` : "—";
-  drawInfoBadge(doc, colLeft, y, "Durată totală deplasare", duration, LIGHT);
-  drawInfoBadge(doc, colRight, y, "Km parcurși", kmTotal, LIGHT);
+  const kmTotal = p.releasedKmUsed != null ? `${p.releasedKmUsed} km` : "\u2014";
+  drawInfoBadge(doc, colLeft, y, t.totalDuration, duration, LIGHT);
+  drawInfoBadge(doc, colRight, y, t.kmDriven, kmTotal, LIGHT);
   y += 26;
 
-  // ── Section 1: Identificare ──────────────────────────────────────────────────
+  // ── Section 1: Identification ─────────────────────────────────────────────
   y = checkPageBreak(doc, y, 60);
-  y = addSectionTitle(doc, y, "1. Identificare vehicul și conducător");
+  y = addSectionTitle(doc, y, t.sec1);
 
   autoTable(doc, {
     startY: y,
     body: [
-      ["Companie / operator", p.companyName || "—"],
-      ["Conducător auto", p.driverName || "—"],
-      ["Email conducător", p.driverEmail || "—"],
-      ["Autovehicul", p.vehicleLabel || "—"],
-      ["Nr. înmatriculare", p.registrationNumber || "—"],
-      ["Scopul deplasării", p.purpose || "—"],
-      ["ID rezervare", p.reservationId || "—"],
+      [t.company, p.companyName || "\u2014"],
+      [t.driverName, p.driverName || "\u2014"],
+      [t.driverEmail, p.driverEmail || "\u2014"],
+      [t.vehicleLabel, p.vehicleLabel || "\u2014"],
+      [t.regNumber, p.registrationNumber || "\u2014"],
+      [t.purpose, p.purpose || "\u2014"],
+      [t.reservationId, p.reservationId || "\u2014"],
     ],
     theme: "plain",
     styles: {
@@ -174,20 +268,18 @@ export function buildJourneySheetPdf(p) {
   });
   y = doc.lastAutoTable.finalY + 8;
 
-  // ── Section 2: Timpi planificați vs efectivi ─────────────────────────────────
+  // ── Section 2: Trip period ────────────────────────────────────────────────
   y = checkPageBreak(doc, y, 55);
-  y = addSectionTitle(doc, y, "2. Perioadă de deplasare");
-
-  const timeRows = [
-    ["Plecare planificată", fmtDt(p.startDate), hasActualTimes ? fmtDt(p.pickedUpAt) : "—"],
-    ["Returnare planificată", fmtDt(p.endDate), hasActualTimes ? fmtDt(p.releasedAt) : "—"],
-    ["Durată planificată", fmtDuration(p.startDate, p.endDate), hasActualTimes ? fmtDuration(p.pickedUpAt, p.releasedAt) : "—"],
-  ];
+  y = addSectionTitle(doc, y, t.sec2);
 
   autoTable(doc, {
     startY: y,
-    head: [["Indicator", "Planificat", "Efectiv"]],
-    body: timeRows,
+    head: [[t.colIndicator, t.colPlanned, t.colActual]],
+    body: [
+      [t.plannedDep, fmtDt(p.startDate, tz), hasActualTimes ? fmtDt(p.pickedUpAt, tz) : "\u2014"],
+      [t.plannedRet, fmtDt(p.endDate, tz), hasActualTimes ? fmtDt(p.releasedAt, tz) : "\u2014"],
+      [t.plannedDur, fmtDuration(p.startDate, p.endDate), hasActualTimes ? fmtDuration(p.pickedUpAt, p.releasedAt) : "\u2014"],
+    ],
     theme: "grid",
     headStyles: {
       fillColor: BLUE,
@@ -211,17 +303,17 @@ export function buildJourneySheetPdf(p) {
   });
   y = doc.lastAutoTable.finalY + 8;
 
-  // ── Section 3: Kilometraj ────────────────────────────────────────────────────
+  // ── Section 3: Mileage ────────────────────────────────────────────────────
   y = checkPageBreak(doc, y, 55);
-  y = addSectionTitle(doc, y, "3. Kilometraj");
+  y = addSectionTitle(doc, y, t.sec3);
 
   autoTable(doc, {
     startY: y,
-    head: [["Indicator", "Valoare"]],
+    head: [[t.colIndicator, t.colValue]],
     body: [
-      ["Km la predare (citire odometru la plecare)", p.releasedOdometerStart != null ? `${p.releasedOdometerStart.toLocaleString("ro-RO")} km` : "—"],
-      ["Km la returnare (citire odometru la sosire)", p.releasedOdometerEnd != null ? `${p.releasedOdometerEnd.toLocaleString("ro-RO")} km` : "—"],
-      ["Km parcurși în această deplasare", p.releasedKmUsed != null ? `${p.releasedKmUsed.toLocaleString("ro-RO")} km` : "—"],
+      [t.odomStart, p.releasedOdometerStart != null ? `${p.releasedOdometerStart.toLocaleString("ro-RO")} km` : "\u2014"],
+      [t.odomEnd, p.releasedOdometerEnd != null ? `${p.releasedOdometerEnd.toLocaleString("ro-RO")} km` : "\u2014"],
+      [t.kmTrip, p.releasedKmUsed != null ? `${p.releasedKmUsed.toLocaleString("ro-RO")} km` : "\u2014"],
     ],
     theme: "grid",
     headStyles: {
@@ -242,17 +334,17 @@ export function buildJourneySheetPdf(p) {
   });
   y = doc.lastAutoTable.finalY + 8;
 
-  // ── Section 4: Semnături ─────────────────────────────────────────────────────
+  // ── Section 4: Signatures ─────────────────────────────────────────────────
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, y, "4. Confirmare și semnături");
+  y = addSectionTitle(doc, y, t.sec4);
 
   const sigW = (pageW - 28 - 8) / 3;
-  drawSignatureBox(doc, 14, y, sigW, 38, "Conducător auto");
-  drawSignatureBox(doc, 14 + sigW + 4, y, sigW, 38, "Responsabil flotă");
-  drawSignatureBox(doc, 14 + (sigW + 4) * 2, y, sigW, 38, "Verificat / Aprobat");
+  drawSignatureBox(doc, 14, y, sigW, 38, t.sigDriver, t.sigLine);
+  drawSignatureBox(doc, 14 + sigW + 4, y, sigW, 38, t.sigManager, t.sigLine);
+  drawSignatureBox(doc, 14 + (sigW + 4) * 2, y, sigW, 38, t.sigApproved, t.sigLine);
   y += 44;
 
-  // ── Disclaimer ───────────────────────────────────────────────────────────────
+  // ── Note ──────────────────────────────────────────────────────────────────
   y = checkPageBreak(doc, y, 25);
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(14, y, pageW - 28, 22, 2, 2, "F");
@@ -263,11 +355,11 @@ export function buildJourneySheetPdf(p) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(...DARK);
-  doc.text("Notă:", 18, y + 6);
+  doc.text(t.noteLabel, 18, y + 6);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...GREY);
   doc.text(
-    `Perioadă rezervare: ${fmtDate(p.startDate)} – ${fmtDate(p.endDate)}. Timpii efectivi de preluare și returnare sunt înregistrați automat de sistem la momentul acționării butoanelor corespunzătoare din aplicație. Acest document nu înlocuiește monitorizarea GPS. Datele provin din sistemul de rezervări FleetShare. Păstrați acest document pentru justificarea cheltuielilor conform legislației fiscale în vigoare.`,
+    t.noteText(fmtDate(p.startDate, tz), fmtDate(p.endDate, tz), tz),
     18,
     y + 11,
     { maxWidth: pageW - 36 },

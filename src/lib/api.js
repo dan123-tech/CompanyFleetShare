@@ -554,9 +554,12 @@ export async function apiGloveboxActive() {
   return data;
 }
 
-/** Download Romanian journey sheet PDF for a completed reservation. */
+/** Download journey sheet PDF for a completed reservation. */
 export async function downloadJourneySheetPdf(reservationId) {
-  const res = await fetch(`/api/reservations/${encodeURIComponent(reservationId)}/journey-sheet`, {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Bucharest";
+  const lang = document.documentElement.lang || navigator.language?.split("-")[0] || "en";
+  const params = new URLSearchParams({ tz, lang });
+  const res = await fetch(`/api/reservations/${encodeURIComponent(reservationId)}/journey-sheet?${params}`, {
     method: "GET",
     credentials: "include",
     cache: "no-store",
