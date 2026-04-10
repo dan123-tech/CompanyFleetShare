@@ -104,16 +104,36 @@ public class GloveboxFragment extends Fragment {
 
     private static String formatExpiry(String raw, Locale loc) {
         if (raw == null || raw.trim().isEmpty()) return "—";
-        return DateParseUtil.formatDateOnlyFromIso(raw.trim(), loc);
+        String out = DateParseUtil.formatDateOnlyFromIso(raw.trim(), loc);
+        return out == null || out.isEmpty() ? "—" : out;
     }
 
     private void render(GloveboxActiveResponse data) {
         GloveboxActiveResponse.GloveboxCar c = data.getCar();
-        String label = c.getLabel() != null ? c.getLabel() : "—";
+        String plate = c.getRegistrationNumber() != null ? c.getRegistrationNumber().trim() : "";
+        String fullLabel = c.getLabel() != null ? c.getLabel().trim() : "";
+        String vehicleDescription = fullLabel;
+        if (!plate.isEmpty() && !fullLabel.isEmpty()) {
+            if (fullLabel.endsWith(plate)) {
+                vehicleDescription = fullLabel.substring(0, fullLabel.length() - plate.length()).trim();
+                vehicleDescription = vehicleDescription.replaceAll("[·\\s]+$", "").trim();
+            } else if (fullLabel.contains(plate)) {
+                vehicleDescription = fullLabel.replace(plate, "").replaceAll("\\s+", " ").trim();
+            }
+        }
+        if (vehicleDescription.isEmpty()) {
+            vehicleDescription = "—";
+        }
         String cat = c.getVehicleCategory() != null && !c.getVehicleCategory().trim().isEmpty()
                 ? c.getVehicleCategory().trim()
                 : null;
-        binding.gloveboxVehicleValue.setText(cat != null ? (label + " · " + cat) : label);
+        if (cat != null && !"—".equals(vehicleDescription)) {
+            vehicleDescription = vehicleDescription + " · " + cat;
+        } else if (cat != null) {
+            vehicleDescription = cat;
+        }
+        binding.gloveboxVehicleValue.setText(vehicleDescription);
+        binding.gloveboxPlateValue.setText(plate.isEmpty() ? "—" : plate);
 
         android.os.LocaleList locales = getResources().getConfiguration().getLocales();
         Locale loc = locales.isEmpty() ? Locale.getDefault() : locales.get(0);

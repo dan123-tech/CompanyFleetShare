@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/surface">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/glovebox_refresh"
@@ -35,6 +37,7 @@
                     android:padding="12dp"
                     android:text="@string/glovebox_no_active"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="@color/on_surface"
                     android:visibility="gone" />
 
                 <com.google.android.material.card.MaterialCardView
@@ -43,8 +46,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:visibility="gone"
+                    app:cardBackgroundColor="@color/glovebox_card_bg"
                     app:cardCornerRadius="16dp"
-                    app:cardUseCompatPadding="true">
+                    app:cardElevation="2dp"
+                    app:cardUseCompatPadding="true"
+                    app:strokeColor="#33FFFFFF"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -57,6 +64,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/glovebox_vehicle"
+                            android:textColor="@color/glovebox_card_on"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -65,12 +74,35 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:text="—"
-                            android:textAppearance="?attr/textAppearanceTitleMedium" />
+                            android:textColor="@color/glovebox_card_on"
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            tools:text="VW Golf · SUV" />
+
+                        <TextView
+                            android:id="@+id/glovebox_plate_label"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/glovebox_plate_number"
+                            android:textColor="@color/glovebox_card_on"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/glovebox_plate_value"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="—"
+                            android:textColor="@color/glovebox_card_on"
+                            android:textSize="16sp"
+                            tools:text="B 101 XXX" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
+                            android:layout_marginTop="14dp"
                             android:orientation="vertical">
 
                             <TextView
@@ -78,8 +110,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:text="—"
-                                android:textSize="16sp"
-                                android:textAppearance="?attr/textAppearanceBodyLarge" />
+                                android:textColor="@color/glovebox_card_muted"
+                                android:textSize="15sp" />
 
                             <TextView
                                 android:id="@+id/glovebox_rca"
@@ -87,8 +119,8 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="6dp"
                                 android:text="—"
-                                android:textSize="16sp"
-                                android:textAppearance="?attr/textAppearanceBodyLarge" />
+                                android:textColor="@color/glovebox_card_muted"
+                                android:textSize="15sp" />
 
                             <TextView
                                 android:id="@+id/glovebox_vignette"
@@ -96,25 +128,30 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="6dp"
                                 android:text="—"
-                                android:textSize="16sp"
-                                android:textAppearance="?attr/textAppearanceBodyLarge" />
+                                android:textColor="@color/glovebox_card_muted"
+                                android:textSize="15sp" />
                         </LinearLayout>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/glovebox_open_rca"
-                            style="@style/Widget.Material3.Button"
+                            style="@style/Widget.MaterialComponents.Button"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="@string/glovebox_open_rca" />
+                            android:layout_marginTop="14dp"
+                            android:text="@string/glovebox_open_rca"
+                            android:textColor="@color/primary"
+                            app:backgroundTint="@color/card_bg" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/glovebox_open_broker"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="@string/glovebox_open_broker" />
+                            android:text="@string/glovebox_open_broker"
+                            android:textColor="@color/glovebox_card_on"
+                            app:strokeColor="@color/glovebox_card_on"
+                            app:strokeWidth="1.5dp" />
 
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -122,4 +159,3 @@
         </ScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
-

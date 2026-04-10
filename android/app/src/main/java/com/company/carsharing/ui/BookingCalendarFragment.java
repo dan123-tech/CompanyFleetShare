@@ -188,6 +188,7 @@ public class BookingCalendarFragment extends Fragment {
                 spinnerLabels);
         spAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         carSpinner.setAdapter(spAdapter);
+        carSpinner.setThreshold(0);
 
         int restore = 0;
         if (selectedCarId != null && !selectedCarId.isEmpty()) {
@@ -239,7 +240,11 @@ public class BookingCalendarFragment extends Fragment {
         listView.setVisibility(empty ? View.GONE : View.VISIBLE);
 
         if (!fleetMode && myId != null) {
-            ReservationAlarmScheduler.schedule(requireContext(), loadedReservations, myId);
+            try {
+                ReservationAlarmScheduler.schedule(requireContext(), loadedReservations, myId);
+            } catch (Exception e) {
+                // Avoid crashing the calendar if alarm scheduling fails on a specific device/OS build.
+            }
         }
     }
 

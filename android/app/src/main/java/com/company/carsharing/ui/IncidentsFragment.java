@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -46,19 +47,23 @@ public class IncidentsFragment extends Fragment {
 
     private IncidentsAdapter adapter;
 
-    private final ActivityResultLauncher<String[]> pickFilesLauncher =
-            registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(), uris -> {
-                if (uris == null) return;
-                // Allow adding files in multiple sessions without losing previous selection.
-                for (Uri u : uris) {
-                    if (u != null && !pickedFiles.contains(u)) pickedFiles.add(u);
-                }
-                if (binding != null) {
-                    binding.incFilesLabel.setText(pickedFiles.isEmpty()
-                            ? getString(R.string.incidents_no_files)
-                            : getString(R.string.incidents_files_count, pickedFiles.size()));
-                }
-            });
+    private ActivityResultLauncher<String[]> pickFilesLauncher;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        pickFilesLauncher = registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(), uris -> {
+            if (uris == null) return;
+            for (Uri u : uris) {
+                if (u != null && !pickedFiles.contains(u)) pickedFiles.add(u);
+            }
+            if (binding != null) {
+                binding.incFilesLabel.setText(pickedFiles.isEmpty()
+                        ? getString(R.string.incidents_no_files)
+                        : getString(R.string.incidents_files_count, pickedFiles.size()));
+            }
+        });
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {

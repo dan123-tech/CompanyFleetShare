@@ -1,56 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- SwipeRefreshLayout must wrap the scrolling child directly (ListView), not a generic LinearLayout. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/calendar_refresh"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical"
+    android:padding="12dp">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/calendar_subtitle"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="12dp">
+        android:layout_height="wrap_content"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="13sp"
+        tools:text="Subtitle" />
 
-        <TextView
-            android:id="@+id/calendar_subtitle"
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="@string/calendar_vehicle_label">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/calendar_car_spinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="13sp"
-            android:textColor="?android:attr/textColorSecondary"
-            tools:text="Subtitle" />
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/calendar_vehicle_label">
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/calendar_car_spinner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none"
-                android:focusable="false"
-                android:focusableInTouchMode="false" />
-        </com.google.android.material.textfield.TextInputLayout>
+    <TextView
+        android:id="@+id/calendar_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="@string/calendar_empty"
+        android:textColor="@color/on_surface_variant"
+        android:textSize="15sp"
+        android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/calendar_empty"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center"
-            android:text="@string/calendar_empty"
-            android:textSize="15sp"
-            android:visibility="gone" />
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/calendar_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1">
 
         <ListView
             android:id="@+id/calendar_list"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="8dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
             android:divider="@android:color/transparent"
             android:dividerHeight="8dp" />
-    </LinearLayout>
-</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</LinearLayout>

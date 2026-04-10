@@ -94,6 +94,7 @@
     <string name="glovebox_loading">Se încarcă torpedoul…</string>
     <string name="glovebox_no_active">Nu există o rezervare activă.\nPornește o rezervare pentru a accesa documentele digitale.</string>
     <string name="glovebox_vehicle">Vehicul</string>
+    <string name="glovebox_plate_number">Număr înmatriculare</string>
     <string name="glovebox_itp_expires">ITP expiră</string>
     <string name="glovebox_rca_expires">RCA expiră</string>
     <string name="glovebox_vignette_expires">Rovinietă expiră</string>

@@ -96,6 +96,7 @@
     <string name="glovebox_loading">Loading documents…</string>
     <string name="glovebox_no_active">No active reservation.\nStart a reservation to access your digital documents.</string>
     <string name="glovebox_vehicle">Vehicle</string>
+    <string name="glovebox_plate_number">Plate number</string>
     <string name="glovebox_itp_expires">ITP expires</string>
     <string name="glovebox_rca_expires">RCA expires</string>
     <string name="glovebox_vignette_expires">Vignette expires</string>

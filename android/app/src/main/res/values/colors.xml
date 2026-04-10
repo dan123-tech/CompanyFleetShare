@@ -68,4 +68,9 @@
     <color name="fuel_hybrid_bg">#CCFBF1</color>
     <color name="fuel_hybrid_text">#134E4A</color>
     <color name="fuel_hybrid_border">#5EEAD4</color>
+
+    <!-- Digital glovebox card (high contrast: light text on dark panel) -->
+    <color name="glovebox_card_bg">#0F172A</color>
+    <color name="glovebox_card_on">#FFFFFF</color>
+    <color name="glovebox_card_muted">#CBD5E1</color>
 </resources>
