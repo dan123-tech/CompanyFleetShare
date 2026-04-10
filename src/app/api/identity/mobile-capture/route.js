@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { get } from "@vercel/blob";
 import { z } from "zod";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { DRIVING_LICENCE_PRIVATE_PREFIX } from "@/lib/driving-licence-ref";
 import { resolveBlobReadWriteToken } from "@/lib/blob-env";
 import { persistSelfieImage } from "@/lib/selfie-storage";
@@ -99,6 +99,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const form = await request.formData();
   const token = String(form.get("token") || "").trim();
   const parsed = querySchema.safeParse({ token });

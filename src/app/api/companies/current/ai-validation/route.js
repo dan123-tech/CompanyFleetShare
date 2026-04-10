@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { requireAdmin, requireCompany, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import {
+  requireAdmin,
+  requireCompany,
+  jsonResponse,
+  errorResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { getCompanyById, updateCompany } from "@/lib/companies";
 import {
   getAiValidationSettings,
@@ -24,6 +30,8 @@ export async function GET() {
 }
 
 export async function PATCH(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
 

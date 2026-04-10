@@ -9,7 +9,13 @@ import { z } from "zod";
 import { findUserByEmail } from "@/lib/users";
 import { verifyPassword } from "@/lib/auth";
 import { normalizeClientType } from "@/lib/auth/session-tokens";
-import { errorResponse } from "@/lib/api-helpers";
+import { errorResponse, rateLimitResponse } from "@/lib/api-helpers";
+import { clientIpFromRequest } from "@/lib/security/client-ip";
+import {
+  assertLoginAuthNotRateLimited,
+  normalizeEmailForRateLimit,
+  recordLoginAuthFailure,
+} from "@/lib/security/rate-limit-auth";
 import { prisma } from "@/lib/db";
 import { buildLoginSuccessResponse } from "@/lib/auth/issue-login-session";
 import {
@@ -120,11 +126,24 @@ export async function POST(request) {
     const clientType =
       bodyClient === "mobile" || (headerClient && headerClient.toLowerCase() === "mobile") ? "mobile" : "web";
 
+    const emailNorm = normalizeEmailForRateLimit(email);
+    const ip = clientIpFromRequest(request);
+    const rl = await assertLoginAuthNotRateLimited(ip, emailNorm);
+    if (!rl.ok) {
+      return rateLimitResponse("Too many sign-in attempts. Please try again later.", rl.retryAfterSec);
+    }
+
     const user = await findUserByEmail(email);
-    if (!user) return errorResponse("Invalid credentials", 401);
+    if (!user) {
+      await recordLoginAuthFailure(ip, emailNorm);
+      return errorResponse("Invalid credentials", 401);
+    }
 
     const ok = await verifyPassword(password, user.password);
-    if (!ok) return errorResponse("Invalid credentials", 401);
+    if (!ok) {
+      await recordLoginAuthFailure(ip, emailNorm);
+      return errorResponse("Invalid credentials", 401);
+    }
 
     const client = normalizeClientType(clientType);
 

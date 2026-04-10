@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { isCompanyAdmin } from "@/lib/companies";
 import { getTenantConfig } from "@/lib/tenant-db";
+import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
 export function jsonResponse(data, status = 200) {
   return NextResponse.json(data, { status });
@@ -13,6 +14,31 @@ export function jsonResponse(data, status = 200) {
 
 export function errorResponse(message, status = 400, extra = {}) {
   return NextResponse.json({ error: message, ...extra }, { status });
+}
+
+/**
+ * 429 with Retry-After for auth / register rate limits.
+ * @param {string} [message]
+ * @param {number} [retryAfterSec]
+ */
+export function rateLimitResponse(
+  message = "Too many attempts. Please try again later.",
+  retryAfterSec = 60
+) {
+  const res = NextResponse.json({ error: message }, { status: 429 });
+  res.headers.set("Retry-After", String(Math.max(1, retryAfterSec)));
+  return res;
+}
+
+/**
+ * Cookie-backed mutating routes: reject cross-site requests without a trusted Origin/Referer.
+ * @param {Request} request
+ * @returns {NextResponse | null} Response to return, or null if OK.
+ */
+export function requireTrustedOriginForMutation(request) {
+  const r = assertTrustedRequestOrigin(request);
+  if (!r.ok) return errorResponse(r.reason, 403);
+  return null;
 }
 
 /** 503 when layer uses external provider (not yet connected). Client can show "Data Source Not Configured". */

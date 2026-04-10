@@ -12,6 +12,8 @@ const nextConfig = {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
+      "frame-src 'self' https:",
+      "worker-src 'self'",
       "object-src 'none'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https:",

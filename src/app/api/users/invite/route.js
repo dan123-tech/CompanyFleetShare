@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { createInvite } from "@/lib/users";
-import { requireAdmin, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireAdmin, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { sendInviteEmail } from "@/lib/email";
 
 const bodySchema = z.object({
@@ -15,6 +15,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const parsed = bodySchema.safeParse(await request.json());

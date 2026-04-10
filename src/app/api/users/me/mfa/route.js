@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { requireSession, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireSession, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth";
 
@@ -18,6 +18,8 @@ const bodySchema = z.object({
 });
 
 export async function PATCH(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireSession();
   if ("response" in out) return out.response;
 

@@ -3,7 +3,7 @@
  * POST /api/incidents — create incident (user)
  */
 import { z } from "zod";
-import { requireCompany, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireCompany, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getTenantPrisma } from "@/lib/tenant-db";
 import { persistIncidentAttachment } from "@/lib/incident-storage";
 import { incidentAttachmentUrlForApi } from "@/lib/incident-ref";
@@ -81,6 +81,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
 

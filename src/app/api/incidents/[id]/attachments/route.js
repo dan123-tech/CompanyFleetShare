@@ -1,7 +1,7 @@
 /**
  * POST /api/incidents/[id]/attachments — append files to an existing incident
  */
-import { requireCompany, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireCompany, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getTenantPrisma } from "@/lib/tenant-db";
 import { persistIncidentAttachment } from "@/lib/incident-storage";
 import { incidentAttachmentUrlForApi } from "@/lib/incident-ref";
@@ -17,6 +17,8 @@ function fileKind(file) {
 }
 
 export async function POST(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
 

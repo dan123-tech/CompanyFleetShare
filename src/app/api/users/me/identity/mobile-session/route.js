@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
+import { clientIpFromRequest } from "@/lib/security/client-ip";
 import { prisma } from "@/lib/db";
 import {
   assertMobileSessionRateLimit,
@@ -17,13 +18,9 @@ const bodySchema = z.object({
   sendEmail: z.boolean().optional(),
 });
 
-function clientIpFromRequest(request) {
-  const xfwd = request.headers.get("x-forwarded-for") || "";
-  const first = xfwd.split(",")[0]?.trim();
-  return first || null;
-}
-
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session?.userId) return errorResponse("Unauthorized", 401);
   if (!session.companyId) {

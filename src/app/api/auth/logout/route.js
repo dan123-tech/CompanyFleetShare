@@ -4,11 +4,13 @@
  */
 
 import { clearSession } from "@/lib/auth";
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   await clearSession();
   return jsonResponse({ ok: true });
 }

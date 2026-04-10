@@ -4,7 +4,7 @@
  * On Vercel, local disk under public/ is not writable; set BLOB_READ_WRITE_TOKEN (Vercel Blob).
  */
 
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getSession } from "@/lib/auth";
 import { setUserDrivingLicenceUrl, setUserDrivingLicenceStatus, clearUserDrivingLicence } from "@/lib/users";
 import { verifyDrivingLicenceWithAI } from "@/lib/ai-verification";
@@ -93,6 +93,8 @@ async function fileToBuffer(file) {
 
 export async function POST(request) {
   try {
+    const denied = requireTrustedOriginForMutation(request);
+    if (denied) return denied;
     let session;
     try {
       session = await getSession();
@@ -216,7 +218,9 @@ export async function POST(request) {
 /**
  * DELETE /api/users/me/driving-licence – remove driving licence photo and status
  */
-export async function DELETE() {
+export async function DELETE(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   let session;
   try {
     session = await getSession();

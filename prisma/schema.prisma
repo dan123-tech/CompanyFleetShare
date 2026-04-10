@@ -421,3 +421,12 @@ model AuditLog {
   @@index([companyId, action])
   @@index([companyId, entityType, entityId])
 }
+
+// Sliding-window auth rate limits (login/register) when Cloudflare KV is not bound.
+model AuthRateLimit {
+  id        String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

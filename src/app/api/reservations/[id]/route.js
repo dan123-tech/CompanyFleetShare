@@ -9,7 +9,13 @@ import { updateCar } from "@/lib/cars";
 import { getCompanyById } from "@/lib/companies";
 import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { prisma } from "@/lib/db";
-import { requireCompany, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
+import {
+  requireCompany,
+  jsonResponse,
+  errorResponse,
+  dataSourceNotConfiguredResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { getUserById } from "@/lib/users";
 import {
@@ -81,6 +87,8 @@ export async function GET(_request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
   try {

@@ -12,11 +12,13 @@
  */
 
 import { getSession } from "@/lib/auth";
-import { errorResponse } from "@/lib/api-helpers";
+import { errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 
 const HELPBOT_URL = process.env.HELPBOT_URL || "http://localhost:8501";
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session) return errorResponse("Unauthorized", 401);
 

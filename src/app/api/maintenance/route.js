@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { requireCompany, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireCompany, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { listMaintenanceEvents, createMaintenanceEvent } from "@/lib/maintenance";
 
 export const runtime = "nodejs";
@@ -27,6 +27,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
   if (out.session.role !== "ADMIN") return errorResponse("Forbidden", 403);

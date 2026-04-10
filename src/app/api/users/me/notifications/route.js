@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { updateUserEmailBookingNotifications } from "@/lib/users";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,8 @@ const bodySchema = z.object({
 });
 
 export async function PATCH(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session?.userId) return errorResponse("Unauthorized", 401);
 

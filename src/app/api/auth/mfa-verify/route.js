@@ -6,7 +6,13 @@
 
 import { z } from "zod";
 import { findUserByEmail } from "@/lib/users";
-import { errorResponse } from "@/lib/api-helpers";
+import { errorResponse, rateLimitResponse } from "@/lib/api-helpers";
+import { clientIpFromRequest } from "@/lib/security/client-ip";
+import {
+  assertLoginAuthNotRateLimited,
+  normalizeEmailForRateLimit,
+  recordLoginAuthFailure,
+} from "@/lib/security/rate-limit-auth";
 import { prisma } from "@/lib/db";
 import { buildLoginSuccessResponse } from "@/lib/auth/issue-login-session";
 import { hashMfaOtp, timingSafeEqualHex, MFA_MAX_ATTEMPTS } from "@/lib/auth/mfa-otp";
@@ -48,6 +54,13 @@ export async function POST(request) {
       ? "mobile"
       : "web";
 
+  const emailNorm = normalizeEmailForRateLimit(email);
+  const ip = clientIpFromRequest(request);
+  const rl = await assertLoginAuthNotRateLimited(ip, emailNorm);
+  if (!rl.ok) {
+    return rateLimitResponse("Too many sign-in attempts. Please try again later.", rl.retryAfterSec);
+  }
+
   const user = await findUserByEmail(email);
   if (!user?.mfaEnabled) return errorResponse("Invalid request", 400);
 
@@ -68,6 +81,7 @@ export async function POST(request) {
   const expected = user.mfaOtpHash;
   const candidate = hashMfaOtp(user.id, code.trim());
   if (!timingSafeEqualHex(expected, candidate)) {
+    await recordLoginAuthFailure(ip, emailNorm);
     await prisma.user.update({
       where: { id: user.id },
       data: { mfaOtpAttempts: { increment: 1 } },

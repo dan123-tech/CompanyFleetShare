@@ -2,7 +2,7 @@
  * PATCH /api/incidents/[id] — admin updates (status, adminNotes)
  */
 import { z } from "zod";
-import { requireCompany, errorResponse, jsonResponse } from "@/lib/api-helpers";
+import { requireCompany, errorResponse, jsonResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getTenantPrisma } from "@/lib/tenant-db";
 import { incidentAttachmentUrlForApi } from "@/lib/incident-ref";
 
@@ -65,6 +65,8 @@ export async function GET(_request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
   if (out.session.role !== "ADMIN") return errorResponse("Forbidden", 403);

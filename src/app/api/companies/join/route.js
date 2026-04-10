@@ -8,13 +8,15 @@ import { z } from "zod";
 import { joinCompanyByCode } from "@/lib/companies";
 import { extendUserSession } from "@/lib/auth";
 import { normalizeClientType } from "@/lib/auth/session-tokens";
-import { requireSession, errorResponse } from "@/lib/api-helpers";
+import { requireSession, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 
 const bodySchema = z.object({
   joinCode: z.string().min(1).max(20),
 });
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireSession();
   if ("response" in out) return out.response;
   const parsed = bodySchema.safeParse(await request.json());

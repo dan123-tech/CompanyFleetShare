@@ -1,7 +1,7 @@
 /**
  * POST /api/cars/[id]/rca-document — admin uploads RCA as PDF or image (Blob or local disk; DB + content type on Car).
  */
-import { requireAdmin, errorResponse, jsonResponse } from "@/lib/api-helpers";
+import { requireAdmin, errorResponse, jsonResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getCarById, updateCar } from "@/lib/cars";
 import { persistGloveboxPublicDocument } from "@/lib/glovebox-storage";
 import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
@@ -90,6 +90,8 @@ function resolveGloveboxFileMeta(file, buffer) {
 }
 
 export async function POST(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
 

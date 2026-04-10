@@ -8,7 +8,13 @@ import { listReservations, createReservation, createInstantReservation, ensureRe
 import { updateCar } from "@/lib/cars";
 import { getProvider, getLayerTable, getStoredCredentials, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { listSqlServerReservations } from "@/lib/connectors/sql-server-reservations";
-import { requireCompany, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
+import {
+  requireCompany,
+  jsonResponse,
+  errorResponse,
+  dataSourceNotConfiguredResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { sendReservationConfirmationEmail, shouldSendBookingEmail } from "@/lib/email";
 
@@ -131,6 +137,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
   try {

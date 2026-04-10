@@ -7,7 +7,7 @@ import { z } from "zod";
 import { updateMemberRole, removeMember, setUserDrivingLicenceStatus, setUserIdentityStatus } from "@/lib/users";
 import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { updateSqlServerUser, deleteSqlServerUser } from "@/lib/connectors/sql-server-users";
-import { requireAdmin, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireAdmin, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 
 const patchSchema = z.object({
@@ -19,6 +19,8 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const { id: userId } = await params;
@@ -99,7 +101,9 @@ export async function PATCH(request, { params }) {
   return errorResponse("No valid update field", 422);
 }
 
-export async function DELETE(_request, { params }) {
+export async function DELETE(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const { id: userId } = await params;

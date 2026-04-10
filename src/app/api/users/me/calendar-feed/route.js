@@ -10,7 +10,7 @@ import {
   rotateCalendarFeedToken,
   clearCalendarFeedToken,
 } from "@/lib/users";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
@@ -36,7 +36,9 @@ export async function GET() {
   });
 }
 
-export async function POST() {
+export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session?.userId) return errorResponse("Unauthorized", 401);
   const token = await rotateCalendarFeedToken(session.userId);
@@ -47,7 +49,9 @@ export async function POST() {
   return jsonResponse({ feedUrl, rotated: true });
 }
 
-export async function DELETE() {
+export async function DELETE(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session?.userId) return errorResponse("Unauthorized", 401);
   await clearCalendarFeedToken(session.userId);

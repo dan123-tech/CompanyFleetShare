@@ -1,4 +1,4 @@
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getSession } from "@/lib/auth";
 import { setUserSelfieUrl, clearUserSelfie } from "@/lib/users";
 import { persistSelfieImage } from "@/lib/selfie-storage";
@@ -56,6 +56,8 @@ async function fileToBuffer(file) {
 
 export async function POST(request) {
   try {
+    const denied = requireTrustedOriginForMutation(request);
+    if (denied) return denied;
     const session = await getSession();
     if (!session?.userId) return errorResponse("Unauthorized", 401);
 
@@ -94,7 +96,9 @@ export async function POST(request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session?.userId) return errorResponse("Unauthorized", 401);
   try {

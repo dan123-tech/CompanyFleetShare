@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { getActiveReservationByPickupCode, verifyPickupCodeTimeWindow } from "@/lib/reservations";
-import { requireCompany, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireCompany, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { isCompanyAdmin } from "@/lib/companies";
 import { prisma } from "@/lib/db";
 
@@ -16,6 +16,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireCompany();
   if ("response" in out) return out.response;
   const parsed = bodySchema.safeParse(await request.json());

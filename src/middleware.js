@@ -44,10 +44,13 @@ export function middleware(request) {
     "base-uri 'self'",
     "form-action 'self'",
     isGloveboxDocumentRoute ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+    "frame-src 'self' https:",
+    "worker-src 'self'",
     "object-src 'none'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "style-src 'self' 'unsafe-inline' https:",
+    // Next.js still often needs 'unsafe-inline' for scripts; tighten later with nonces/hashes where feasible.
     "script-src 'self' 'unsafe-inline' https:",
     "connect-src 'self' https: wss:",
     "upgrade-insecure-requests",

@@ -7,7 +7,14 @@ import { z } from "zod";
 import { listCars, createCar } from "@/lib/cars";
 import { getProvider, getLayerTable, getStoredCredentials, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { listSqlServerCars, createSqlServerCar } from "@/lib/connectors/sql-server-cars";
-import { requireCompany, requireAdmin, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
+import {
+  requireCompany,
+  requireAdmin,
+  jsonResponse,
+  errorResponse,
+  dataSourceNotConfiguredResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
 
@@ -123,6 +130,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const parsed = postSchema.safeParse(await request.json());

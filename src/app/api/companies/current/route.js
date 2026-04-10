@@ -5,7 +5,13 @@
 
 import { z } from "zod";
 import { getCompanyById, updateCompany } from "@/lib/companies";
-import { requireSession, requireAdmin, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import {
+  requireSession,
+  requireAdmin,
+  jsonResponse,
+  errorResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 
 export async function GET() {
@@ -59,6 +65,8 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   let body;

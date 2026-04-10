@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { requireSession, jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { requireSession, jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { setUserFcmToken } from "@/lib/users";
 
 const bodySchema = z.object({
@@ -13,6 +13,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireSession();
   if ("response" in out) return out.response;
   let body;
@@ -27,7 +29,9 @@ export async function POST(request) {
   return jsonResponse({ ok: true });
 }
 
-export async function DELETE() {
+export async function DELETE(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireSession();
   if ("response" in out) return out.response;
   await setUserFcmToken(out.session.userId, null);

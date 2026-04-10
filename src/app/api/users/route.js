@@ -6,7 +6,14 @@
 import { z } from "zod";
 import { listCompanyMembers, createUser } from "@/lib/users";
 import { getProvider, getLayerTable, getStoredCredentials, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
-import { requireCompany, requireAdmin, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
+import {
+  requireCompany,
+  requireAdmin,
+  jsonResponse,
+  errorResponse,
+  dataSourceNotConfiguredResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { listFirebaseUsers, isFirebaseConfigured } from "@/lib/connectors/firebase-users";
 import { listSqlServerUsers, createSqlServerUser } from "@/lib/connectors/sql-server-users";
 import { drivingLicenceUrlForApi } from "@/lib/driving-licence-ref";
@@ -116,6 +123,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const parsed = postSchema.safeParse(await request.json());

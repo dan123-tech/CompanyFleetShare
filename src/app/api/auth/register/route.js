@@ -6,7 +6,15 @@
 
 import { z } from "zod";
 import { findUserByEmail, createUser } from "@/lib/users";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, rateLimitResponse } from "@/lib/api-helpers";
+import { clientIpFromRequest } from "@/lib/security/client-ip";
+import {
+  assertRegisterEmailNotRateLimited,
+  assertRegisterIpNotRateLimited,
+  normalizeEmailForRateLimit,
+  recordRegisterEmailAttempt,
+  recordRegisterPostAttempt,
+} from "@/lib/security/rate-limit-auth";
 import { sendWelcomeEmail } from "@/lib/email";
 import { assertTrustedRequestOrigin } from "@/lib/security/csrf";
 
@@ -32,11 +40,27 @@ export async function POST(request) {
     return errorResponse(msg, 422);
   }
   const { email, password, name } = parsed.data;
+  const emailNorm = normalizeEmailForRateLimit(email);
+  const ip = clientIpFromRequest(request);
+
+  let rl = await assertRegisterIpNotRateLimited(ip);
+  if (!rl.ok) {
+    return rateLimitResponse("Too many registration attempts. Please try again later.", rl.retryAfterSec);
+  }
+  rl = await assertRegisterEmailNotRateLimited(emailNorm);
+  if (!rl.ok) {
+    return rateLimitResponse("Too many registration attempts for this email. Please try again later.", rl.retryAfterSec);
+  }
+  await recordRegisterPostAttempt(ip);
 
   const existing = await findUserByEmail(email);
-  if (existing) return errorResponse("Email already registered", 409);
+  if (existing) {
+    await recordRegisterEmailAttempt(emailNorm);
+    return errorResponse("Email already registered", 409);
+  }
 
   const user = await createUser({ email, password, name });
+  await recordRegisterEmailAttempt(emailNorm);
 
   // Must await: Vercel / Workers often freeze the isolate right after the response is sent,
   // so fire-and-forget .then() never runs and no email is sent.

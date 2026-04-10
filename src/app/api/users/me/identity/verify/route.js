@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { get } from "@vercel/blob";
-import { jsonResponse, errorResponse } from "@/lib/api-helpers";
+import { jsonResponse, errorResponse, requireTrustedOriginForMutation } from "@/lib/api-helpers";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { verifyIdentityFaceMatch } from "@/lib/identity-verification";
@@ -63,6 +63,8 @@ async function bufferFromStored(stored, localPrefix, localFolder, privatePrefix)
 }
 
 export async function POST(request) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const session = await getSession();
   if (!session?.userId) return errorResponse("Unauthorized", 401);
 

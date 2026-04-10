@@ -8,7 +8,14 @@ import { z } from "zod";
 import { getCarById, updateCar, deleteCar } from "@/lib/cars";
 import { getProvider, LAYERS, PROVIDERS } from "@/lib/data-source-manager";
 import { getSqlServerCarById, updateSqlServerCar, deleteSqlServerCar } from "@/lib/connectors/sql-server-cars";
-import { requireCompany, requireAdmin, jsonResponse, errorResponse, dataSourceNotConfiguredResponse } from "@/lib/api-helpers";
+import {
+  requireCompany,
+  requireAdmin,
+  jsonResponse,
+  errorResponse,
+  dataSourceNotConfiguredResponse,
+  requireTrustedOriginForMutation,
+} from "@/lib/api-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { getTenantPrisma } from "@/lib/tenant-db";
 import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
@@ -124,6 +131,8 @@ export async function GET(_request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const { id } = await params;
@@ -307,7 +316,9 @@ export async function PATCH(request, { params }) {
   });
 }
 
-export async function DELETE(_request, { params }) {
+export async function DELETE(request, { params }) {
+  const denied = requireTrustedOriginForMutation(request);
+  if (denied) return denied;
   const out = await requireAdmin();
   if ("response" in out) return out.response;
   const { id } = await params;
