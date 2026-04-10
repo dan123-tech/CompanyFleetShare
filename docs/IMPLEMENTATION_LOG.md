@@ -79,6 +79,31 @@ Applied via **`next.config.mjs`** (`headers()`) and reinforced in **`src/middlew
 
 - **`public/.well-known/security.txt`** — security contact placeholder (`Contact:`). **Replace** with a monitored email before production disclosure expectations.
 
+### 3.3 Auth rate limiting (brute-force mitigation)
+
+Added rate limiting for:
+
+- `POST /api/auth/login` (counts **failed** credentials per IP + per email)
+- `POST /api/auth/register` (caps posts per IP and attempts per email)
+- `POST /api/auth/mfa-verify` (counts **failed** codes per IP + per email)
+
+Implementation prefers Cloudflare KV (`RATE_LIMIT_KV`) when running on Workers, and falls back to a control-plane Postgres table `AuthRateLimit` (migration added) when KV is unavailable (e.g. Vercel-only).
+
+### 3.4 CSRF / origin checks for sensitive mutations
+
+To reduce cross-site request risks for cookie-authenticated endpoints, mutating handlers (`POST` / `PATCH` / `DELETE`) now call `requireTrustedOriginForMutation` which rejects requests whose `Origin`/`Referer` is not trusted (same-origin or allow-listed).
+
+Cron routes remain bearer-secret protected and do not use cookie CSRF checks.
+
+### 3.5 CSP incremental tightening
+
+Baseline CSP remains compatible with Next.js (includes `'unsafe-inline'`), with incremental additions like `frame-src` / `worker-src`. Long term, nonces/hashes can replace inline allowances where feasible.
+
+### 3.6 Supply chain hardening (Dependabot + npm audit CI)
+
+- Added **Dependabot** for npm dependencies and grouped updates to reduce noise (at most one open PR).
+- Added a GitHub Actions workflow that runs `npm audit --audit-level=critical` to block merges on critical vulnerabilities.
+
 ---
 
 ## 4. Identity verification (anti-impersonation)

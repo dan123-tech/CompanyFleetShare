@@ -62,6 +62,12 @@ Wait until the build shows **Ready**, then open the **Production URL** (or your 
 | `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated origins allowed to call `/api/*` with cookies (mobile / multiple front-end hosts). If unset, `NEXT_PUBLIC_APP_URL` is used as a single allowed origin when set |
 | `DISABLE_WEB_OBFUSCATION` | Optional | Set to `1` to skip client JS obfuscation during `next build` (debug only) |
 | `DISABLE_HSTS` | Optional | Set to `1` to omit HSTS (e.g. local HTTPS experiments) |
+| `AUTH_RATE_LIMIT_ENABLED` | Optional | Set to `0` to disable auth rate limiting (default enabled) |
+| `AUTH_RATE_LIMIT_WINDOW_SEC` | Optional | Rate-limit window in seconds (default 900 = 15 min) |
+| `AUTH_RATE_LOGIN_FAIL_IP_MAX` | Optional | Max failed logins per IP per window (default 10) |
+| `AUTH_RATE_LOGIN_FAIL_EMAIL_MAX` | Optional | Max failed logins per email per window (default 25) |
+| `AUTH_RATE_REGISTER_IP_MAX` | Optional | Max registration posts per IP per window (default 20) |
+| `AUTH_RATE_REGISTER_EMAIL_MAX` | Optional | Max registration attempts per email per window (default 8) |
 
 Copy from **`.env.example`** and never commit real `.env` files.
 
@@ -82,6 +88,14 @@ Detailed notes live in **`docs/SECURITY.md`**:
 Production security headers (`X-Frame-Options`, `X-Content-Type-Options`, etc.) are set in **`src/middleware.js`**.
 
 **Client obfuscation:** Production browser bundles can use **identifier obfuscation** via `webpack-obfuscator` in **`next.config.mjs`** (conservative settings). This is **not** a substitute for server-side secrets; never put secrets in `NEXT_PUBLIC_*`.
+
+### CSRF / origin checks (important for cookie APIs)
+
+Mutating cookie-authenticated APIs (`POST` / `PATCH` / `DELETE`) reject cross-site browser requests unless `Origin`/`Referer` is trusted (same-origin or allow-listed via CORS config). If you serve the frontend from multiple domains, ensure they are in `CORS_ALLOWED_ORIGINS` so legitimate requests are not blocked.
+
+### Auth rate limiting (Vercel)
+
+On Vercel, rate limiting uses the **Postgres control DB** (table `AuthRateLimit`). Ensure your deployment process runs **`prisma migrate deploy`** against production so this table exists.
 
 ---
 

@@ -9,8 +9,12 @@
 
 ## Auth rate limiting (login, register, MFA)
 
+- Implemented on:
+  - `POST /api/auth/login` (failed credentials only)
+  - `POST /api/auth/register`
+  - `POST /api/auth/mfa-verify` (failed codes)
 - **Cloudflare Workers:** bind a KV namespace as `RATE_LIMIT_KV` on the Worker (Wrangler / Workers & Pages → Settings → Bindings). Counters are stored in KV first.
-- **Without KV** (e.g. plain Node or Vercel without Worker bindings), limits use the control-plane table `AuthRateLimit` after you run migrations.
+- **Vercel / Node (no KV bindings):** limits fall back to the control-plane table `AuthRateLimit` (**run migrations** so the table exists).
 - Tune with optional env vars (see `.env.example`): window length, per-IP and per-email caps, `AUTH_RATE_LIMIT_ENABLED=0` to disable.
 
 ## CSRF / origin checks
@@ -24,4 +28,5 @@ Production CSP is set in `next.config.mjs` and `middleware.js`. Scripts still us
 ## Supply chain
 
 - Dependabot is configured under `.github/dependabot.yml`.
+- Dependabot npm updates are grouped to reduce noise (at most one open PR at a time).
 - CI runs `npm audit --audit-level=critical` (`.github/workflows/security-audit.yml`). Address or document any critical findings before merging.

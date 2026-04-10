@@ -75,6 +75,13 @@ npx prisma migrate dev --name init
 npx prisma studio
 ```
 
+**Production (Vercel/CI):**
+
+```bash
+# Apply committed migrations to production database
+npx prisma migrate deploy
+```
+
 ---
 
 ## 4. Run the app
