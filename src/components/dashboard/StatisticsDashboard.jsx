@@ -237,6 +237,65 @@ export default function StatisticsDashboard({ reservations = [], company, users 
     doc.save(`statistics-${periodKey}-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  // ── Km Heatmap data (last 12 months × top cars) ──────────────────────────
+  const heatmapData = useMemo(() => {
+    const now = new Date();
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    function mkey(raw) {
+      if (!raw) return null;
+      try { const d = new Date(raw); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+      catch { return null; }
+    }
+    // sum km per car per month
+    const byCarMonth = {};
+    for (const r of reservations) {
+      if (r.status !== "COMPLETED" || !(r.releasedKmUsed > 0)) continue;
+      const cid = r.carId || r.car?.id;
+      const mon = mkey(r.releasedAt || r.updatedAt);
+      if (!cid || !months.includes(mon)) continue;
+      if (!byCarMonth[cid]) byCarMonth[cid] = {};
+      byCarMonth[cid][mon] = (byCarMonth[cid][mon] || 0) + r.releasedKmUsed;
+    }
+    // build rows sorted by total km desc, take top 12
+    const rows = Object.entries(byCarMonth).map(([cid, mmap]) => {
+      const car = carMap[cid];
+      const totalKm = Object.values(mmap).reduce((a, b) => a + b, 0);
+      return {
+        cid,
+        label: car ? (carBrandModel(car) || car.registrationNumber) : cid,
+        plate: car?.registrationNumber || "",
+        mmap,
+        totalKm,
+      };
+    }).sort((a, b) => b.totalKm - a.totalKm).slice(0, 12);
+
+    const allValues = rows.flatMap((r) => Object.values(r.mmap));
+    const maxKm = allValues.length ? Math.max(...allValues) : 1;
+    return { months, rows, maxKm };
+  }, [reservations, carMap]);
+
+  // ── Top drivers by KM ─────────────────────────────────────────────────────
+  const topDriversByKm = useMemo(() => {
+    const driverKm = {};
+    for (const r of reservations) {
+      if (r.status !== "COMPLETED" || !(r.releasedKmUsed > 0)) continue;
+      const uid = r.userId || r.user?.id;
+      if (!uid) continue;
+      driverKm[uid] = (driverKm[uid] || 0) + r.releasedKmUsed;
+    }
+    return Object.entries(driverKm)
+      .map(([uid, km]) => {
+        const u = (users || []).find((x) => (x.id || x.userId) === uid);
+        return { uid, name: u?.name || u?.email || uid, km };
+      })
+      .sort((a, b) => b.km - a.km)
+      .slice(0, 10);
+  }, [reservations, users]);
+
   return (
     <section className="w-full max-w-[1600px] min-w-0 mx-auto">
       <div className="flex flex-col gap-4 mb-6">
@@ -673,6 +732,113 @@ export default function StatisticsDashboard({ reservations = [], company, users 
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Km Heatmap ────────────────────────────────────────────────────── */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-8">
+        <h3 className="text-lg font-semibold text-[#1E293B] mb-1">KM Usage Heatmap</h3>
+        <p className="text-sm text-slate-500 mb-4">
+          Kilometres driven per vehicle per month — last 12 months. Darker = more km.
+        </p>
+        {heatmapData.rows.length === 0 ? (
+          <div className="py-10 text-center text-slate-500">No completed trips with km data yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse" style={{ minWidth: 640 }}>
+              <thead>
+                <tr>
+                  <th className="text-left py-2 pr-3 font-semibold text-slate-600 whitespace-nowrap" style={{ minWidth: 130 }}>
+                    Vehicle
+                  </th>
+                  {heatmapData.months.map((m) => {
+                    const [y, mo] = m.split("-");
+                    const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleString(
+                      locale === "ro" ? "ro-RO" : "en-GB",
+                      { month: "short" }
+                    );
+                    return (
+                      <th key={m} className="text-center py-2 px-1 font-semibold text-slate-500 whitespace-nowrap" style={{ minWidth: 44 }}>
+                        {label}
+                      </th>
+                    );
+                  })}
+                  <th className="text-right py-2 pl-3 font-semibold text-slate-600 whitespace-nowrap">
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {heatmapData.rows.map((row) => (
+                  <tr key={row.cid} className="border-t border-slate-100">
+                    <td className="py-1.5 pr-3 font-medium text-slate-700 whitespace-nowrap" style={{ maxWidth: 160 }}>
+                      <span className="block truncate" title={`${row.label} · ${row.plate}`}>
+                        {row.label}
+                      </span>
+                      {row.plate && (
+                        <span className="block text-slate-400 font-normal">{row.plate}</span>
+                      )}
+                    </td>
+                    {heatmapData.months.map((m) => {
+                      const km = row.mmap[m] ?? 0;
+                      const intensity = heatmapData.maxKm > 0 ? km / heatmapData.maxKm : 0;
+                      // interpolate white → #185FA5 blue
+                      const r2 = Math.round(255 + (24  - 255) * intensity);
+                      const g2 = Math.round(255 + (95  - 255) * intensity);
+                      const b2 = Math.round(255 + (165 - 255) * intensity);
+                      const bg = `rgb(${r2},${g2},${b2})`;
+                      const fg = intensity > 0.5 ? "#ffffff" : "#1E293B";
+                      return (
+                        <td
+                          key={m}
+                          className="text-center px-1 py-1.5 rounded font-mono tabular-nums"
+                          style={{ backgroundColor: bg, color: fg, minWidth: 44 }}
+                          title={`${row.label} · ${m}: ${km.toLocaleString()} km`}
+                        >
+                          {km > 0 ? km.toLocaleString() : ""}
+                        </td>
+                      );
+                    })}
+                    <td className="text-right pl-3 font-semibold tabular-nums text-[#1E293B]">
+                      {row.totalKm.toLocaleString()} km
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Top Drivers by KM ─────────────────────────────────────────────── */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-8">
+        <h3 className="text-lg font-semibold text-[#1E293B] mb-1">Top Drivers by KM Driven</h3>
+        <p className="text-sm text-slate-500 mb-4">All time — total kilometres driven per driver.</p>
+        {topDriversByKm.length === 0 ? (
+          <div className="py-10 text-center text-slate-500">No completed trips with km data yet.</div>
+        ) : (
+          <div className="space-y-2">
+            {topDriversByKm.map((row, i) => {
+              const pct = topDriversByKm[0].km > 0 ? (row.km / topDriversByKm[0].km) * 100 : 0;
+              return (
+                <div key={row.uid} className="flex items-center gap-3">
+                  <span className="w-5 text-right text-xs font-bold text-slate-400 shrink-0">{i + 1}</span>
+                  <span className="w-36 text-sm font-medium text-slate-700 truncate shrink-0" title={row.name}>
+                    {row.name}
+                  </span>
+                  <div className="flex-1 h-5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${pct}%`, backgroundColor: "#185FA5" }}
+                    />
+                  </div>
+                  <span className="w-24 text-right text-sm font-semibold tabular-nums text-[#1E293B] shrink-0">
+                    {row.km.toLocaleString(locale === "ro" ? "ro-RO" : "en-GB")} km
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Fuel expenditure line chart (last 30 days) */}

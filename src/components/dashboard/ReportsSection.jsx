@@ -10,6 +10,8 @@ import {
   Loader2,
   Info,
   BarChart2,
+  TableIcon,
+  Sheet,
 } from "lucide-react";
 import { apiMaintenanceList, apiIncidentsList } from "@/lib/api";
 import {
@@ -17,7 +19,9 @@ import {
   generateCarPeriodReport,
   generateCarMaintenanceReport,
   generateCompleteFleetReport,
+  generateMonthlyCostReport,
 } from "@/lib/pdf-report";
+import { downloadFleetExcel, downloadFleetCsv } from "@/lib/export-spreadsheet";
 import { useI18n } from "@/i18n/I18nProvider";
 
 const REPORT_TYPES = [
@@ -53,6 +57,14 @@ const REPORT_TYPES = [
     needsCar: false,
     needsPeriod: false,
   },
+  {
+    id: "monthly-cost",
+    label: "Monthly Cost Report",
+    description: "Fuel & maintenance costs grouped by month — per vehicle and per driver.",
+    icon: TableIcon,
+    needsCar: false,
+    needsPeriod: false,
+  },
 ];
 
 function carDisplayLabel(car) {
@@ -68,6 +80,7 @@ export default function ReportsSection({ cars = [], reservations = [], users = [
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
 
   const [maintenanceEvents, setMaintenanceEvents] = useState([]);
@@ -149,6 +162,11 @@ export default function ReportsSection({ cars = [], reservations = [], users = [
         await generateCompleteFleetReport({
           cars, reservations, maintenanceEvents, incidents, users, ...ctx,
         });
+
+      } else if (reportType === "monthly-cost") {
+        await generateMonthlyCostReport({
+          reservations, maintenanceEvents, cars, users, ...ctx,
+        });
       }
     } catch (err) {
       console.error("Report generation failed:", err);
@@ -162,6 +180,21 @@ export default function ReportsSection({ cars = [], reservations = [], users = [
     !generating &&
     !dataLoading &&
     (!currentType?.needsCar || selectedCarId !== "");
+
+  async function handleExport(format) {
+    setExporting(true);
+    setError("");
+    try {
+      const params = { reservations, maintenanceEvents, cars, users, company, companyName: company?.name };
+      if (format === "xlsx") downloadFleetExcel(params);
+      else downloadFleetCsv(params);
+    } catch (err) {
+      console.error("Export failed:", err);
+      setError("Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const sortedCars = [...cars].sort((a, b) => {
     const la = carDisplayLabel(a).toLowerCase();
@@ -196,6 +229,36 @@ export default function ReportsSection({ cars = [], reservations = [], users = [
               Open Statistics
             </button>
           )}
+        </div>
+      </div>
+
+      {/* ── Export spreadsheet ── */}
+      <div className="mb-6 max-w-3xl bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          Export Data
+        </p>
+        <p className="text-sm text-slate-500 mb-4">
+          Download the full fleet dataset as a spreadsheet — reservations, km logs, fuel costs and maintenance in one file.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={exporting || dataLoading}
+            onClick={() => handleExport("xlsx")}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sheet className="w-4 h-4" />}
+            Download Excel (.xlsx)
+          </button>
+          <button
+            type="button"
+            disabled={exporting || dataLoading}
+            onClick={() => handleExport("csv")}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <TableIcon className="w-4 h-4" />}
+            Download CSV
+          </button>
         </div>
       </div>
 

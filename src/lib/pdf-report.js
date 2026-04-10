@@ -787,3 +787,245 @@ export async function generateCompleteFleetReport({
   finalizePdfFooters(doc, company?.name);
   doc.save(`fleet-complete-report-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Monthly Cost Report
+// ─────────────────────────────────────────────────────────────────────────────
+function calcFuelCostReport(r, car, company) {
+  const km = r.releasedKmUsed ?? 0;
+  if (km <= 0 || !car || !company) return 0;
+  const ft   = car.fuelType ?? "Benzine";
+  const l100 = car.averageConsumptionL100km ?? company.defaultConsumptionL100km ?? 7.5;
+  const kwh  = car.averageConsumptionKwh100km ?? 20;
+  const pB   = company.priceBenzinePerLiter ?? company.averageFuelPricePerLiter ?? 0;
+  const pD   = company.priceDieselPerLiter  ?? company.averageFuelPricePerLiter ?? 0;
+  const pH   = company.priceHybridPerLiter  ?? pB ?? 0;
+  const pE   = company.priceElectricityPerKwh ?? 0;
+  if (ft === "Electric") return (km / 100) * kwh * pE;
+  if (ft === "Hybrid")   return (km / 100) * l100 * pH + (km / 100) * kwh * pE;
+  return (km / 100) * l100 * (ft === "Diesel" ? pD : pB);
+}
+
+/**
+ * Generates a Monthly Cost Report PDF.
+ *
+ * @param {{ reservations, maintenanceEvents, cars, users, company,
+ *           locale, formatCurrency, formatDate,
+ *           yearFrom?, yearTo? }} params
+ */
+export async function generateMonthlyCostReport({
+  reservations = [],
+  maintenanceEvents = [],
+  cars = [],
+  users = [],
+  company,
+  locale,
+  formatCurrency,
+  formatDate,
+}) {
+  const ls  = locale === "ro" ? "ro-RO" : "en-GB";
+  const fc  = formatCurrency ?? ((v) => `${Number(v).toFixed(2)}`);
+  const logo = await fetchLogoDataUrl();
+
+  const carMap  = Object.fromEntries(cars.map((c) => [c.id, c]));
+  const userMap = Object.fromEntries(users.map((u) => [u.id || u.userId, u]));
+
+  function monthKey(raw) {
+    if (!raw) return null;
+    try { const d = new Date(raw); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+    catch { return null; }
+  }
+  function monthLabel(key) {
+    if (!key) return "—";
+    try {
+      const [y, m] = key.split("-");
+      return new Date(Number(y), Number(m) - 1, 1).toLocaleString(ls, { month: "long", year: "numeric" });
+    } catch { return key; }
+  }
+
+  // ── Build month-level aggregates ──────────────────────────────────────────
+  // { [month]: { km, fuelCost, maintenanceCost, trips } }
+  const byMonth     = {};
+  // { [carId]: { [month]: { km, fuelCost, maintenanceCost, trips } } }
+  const byCar       = {};
+  // { [userId]: { [month]: { km, fuelCost, trips } } }
+  const byDriver    = {};
+
+  const completedRes = reservations.filter((r) => r.status === "COMPLETED");
+
+  for (const r of completedRes) {
+    const mon = monthKey(r.releasedAt || r.updatedAt);
+    if (!mon) continue;
+    const km    = r.releasedKmUsed ?? 0;
+    const car   = carMap[r.carId || r.car?.id];
+    const cost  = calcFuelCostReport(r, car, company);
+    const cid   = r.carId || r.car?.id || "?";
+    const uid   = r.userId || r.user?.id || "?";
+
+    // global by month
+    if (!byMonth[mon]) byMonth[mon] = { km: 0, fuelCost: 0, maintenanceCost: 0, trips: 0 };
+    byMonth[mon].km       += km;
+    byMonth[mon].fuelCost += cost;
+    byMonth[mon].trips    += 1;
+
+    // by car
+    if (!byCar[cid]) byCar[cid] = {};
+    if (!byCar[cid][mon]) byCar[cid][mon] = { km: 0, fuelCost: 0, maintenanceCost: 0, trips: 0 };
+    byCar[cid][mon].km       += km;
+    byCar[cid][mon].fuelCost += cost;
+    byCar[cid][mon].trips    += 1;
+
+    // by driver
+    if (!byDriver[uid]) byDriver[uid] = {};
+    if (!byDriver[uid][mon]) byDriver[uid][mon] = { km: 0, fuelCost: 0, trips: 0 };
+    byDriver[uid][mon].km       += km;
+    byDriver[uid][mon].fuelCost += cost;
+    byDriver[uid][mon].trips    += 1;
+  }
+
+  for (const e of maintenanceEvents) {
+    const mon  = monthKey(e.performedAt || e.date);
+    if (!mon) continue;
+    const cost = Number(e.cost ?? 0);
+    const cid  = e.carId || "?";
+    if (!byMonth[mon]) byMonth[mon] = { km: 0, fuelCost: 0, maintenanceCost: 0, trips: 0 };
+    byMonth[mon].maintenanceCost += cost;
+    if (!byCar[cid]) byCar[cid] = {};
+    if (!byCar[cid][mon]) byCar[cid][mon] = { km: 0, fuelCost: 0, maintenanceCost: 0, trips: 0 };
+    byCar[cid][mon].maintenanceCost += cost;
+  }
+
+  const months = Object.keys({ ...byMonth }).sort();
+
+  // ── Build PDF ──────────────────────────────────────────────────────────────
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const generatedOn = new Date().toLocaleString(ls, { dateStyle: "short", timeStyle: "short" });
+
+  let y = drawPdfHeader(doc, {
+    title: "Monthly Cost Report",
+    subtitle: `Fuel & maintenance costs by month`,
+    company,
+    generatedOn: `Generated: ${generatedOn}`,
+    logoDataUrl: logo,
+  });
+
+  // ── Section 1: Monthly summary ────────────────────────────────────────────
+  y = addSectionTitle(doc, y, "Monthly Summary");
+  const hasFuelPrices = Boolean(
+    company?.priceBenzinePerLiter || company?.priceDieselPerLiter ||
+    company?.priceHybridPerLiter  || company?.priceElectricityPerKwh ||
+    company?.averageFuelPricePerLiter
+  );
+
+  const summaryRows = months.map((mon) => {
+    const d = byMonth[mon];
+    const total = d.fuelCost + d.maintenanceCost;
+    return [
+      monthLabel(mon),
+      String(d.trips),
+      `${d.km.toLocaleString(ls)} km`,
+      hasFuelPrices ? fc(d.fuelCost)        : "—",
+      d.maintenanceCost > 0 ? fc(d.maintenanceCost) : "—",
+      hasFuelPrices ? fc(total)              : "—",
+    ];
+  });
+
+  // Totals row
+  const totKm   = Object.values(byMonth).reduce((s, d) => s + d.km, 0);
+  const totFuel = Object.values(byMonth).reduce((s, d) => s + d.fuelCost, 0);
+  const totMnt  = Object.values(byMonth).reduce((s, d) => s + d.maintenanceCost, 0);
+  const totAll  = totFuel + totMnt;
+  const totTrips = Object.values(byMonth).reduce((s, d) => s + d.trips, 0);
+  summaryRows.push([
+    "TOTAL",
+    String(totTrips),
+    `${totKm.toLocaleString(ls)} km`,
+    hasFuelPrices ? fc(totFuel) : "—",
+    totMnt > 0 ? fc(totMnt) : "—",
+    hasFuelPrices ? fc(totAll) : "—",
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Month", "Trips", "KM Driven", "Est. Fuel Cost", "Maintenance Cost", "Total Cost"]],
+    body: summaryRows,
+    theme: "grid",
+    headStyles: HEAD_STYLE,
+    bodyStyles: BODY_STYLE,
+    alternateRowStyles: ALT_STYLE,
+    margin: TBL_MARGIN,
+    didParseCell: ({ row, cell }) => {
+      if (row.index === summaryRows.length - 1) {
+        cell.styles.fontStyle = "bold";
+        cell.styles.fillColor = LIGHT;
+      }
+    },
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ── Section 2: Per-car breakdown ──────────────────────────────────────────
+  y = checkPageBreak(doc, y, 30);
+  y = addSectionTitle(doc, y, "Per Vehicle Breakdown");
+
+  const carRows = Object.entries(byCar)
+    .map(([cid, mmap]) => {
+      const car   = carMap[cid];
+      const label = car ? [[car.brand, car.model].filter(Boolean).join(" "), car.registrationNumber].filter(Boolean).join(" · ") : cid;
+      const km    = Object.values(mmap).reduce((s, d) => s + d.km, 0);
+      const fuel  = Object.values(mmap).reduce((s, d) => s + d.fuelCost, 0);
+      const mnt   = Object.values(mmap).reduce((s, d) => s + d.maintenanceCost, 0);
+      const trips = Object.values(mmap).reduce((s, d) => s + d.trips, 0);
+      return [label, car?.fuelType || "—", String(trips), `${km.toLocaleString(ls)} km`, hasFuelPrices ? fc(fuel) : "—", mnt > 0 ? fc(mnt) : "—", hasFuelPrices ? fc(fuel + mnt) : "—"];
+    })
+    .sort((a, b) => {
+      const kmA = Number((a[3] || "0").replace(/[^\d]/g, ""));
+      const kmB = Number((b[3] || "0").replace(/[^\d]/g, ""));
+      return kmB - kmA;
+    });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Vehicle", "Fuel Type", "Trips", "KM Driven", "Est. Fuel Cost", "Maintenance Cost", "Total Cost"]],
+    body: carRows,
+    theme: "grid",
+    headStyles: HEAD_STYLE,
+    bodyStyles: BODY_STYLE,
+    alternateRowStyles: ALT_STYLE,
+    margin: TBL_MARGIN,
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ── Section 3: Per-driver breakdown ───────────────────────────────────────
+  y = checkPageBreak(doc, y, 30);
+  y = addSectionTitle(doc, y, "Per Driver Breakdown");
+
+  const driverRows = Object.entries(byDriver)
+    .map(([uid, mmap]) => {
+      const u     = userMap[uid];
+      const name  = u?.name  || "—";
+      const email = u?.email || "—";
+      const km    = Object.values(mmap).reduce((s, d) => s + d.km, 0);
+      const fuel  = Object.values(mmap).reduce((s, d) => s + d.fuelCost, 0);
+      const trips = Object.values(mmap).reduce((s, d) => s + d.trips, 0);
+      return [name, email, String(trips), `${km.toLocaleString(ls)} km`, hasFuelPrices ? fc(fuel) : "—"];
+    })
+    .sort((a, b) => {
+      const kmA = Number((a[3] || "0").replace(/[^\d]/g, ""));
+      const kmB = Number((b[3] || "0").replace(/[^\d]/g, ""));
+      return kmB - kmA;
+    });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Driver", "Email", "Trips", "KM Driven", "Est. Fuel Cost"]],
+    body: driverRows,
+    theme: "grid",
+    headStyles: HEAD_STYLE,
+    bodyStyles: BODY_STYLE,
+    alternateRowStyles: ALT_STYLE,
+    margin: TBL_MARGIN,
+  });
+
+  finalizePdfFooters(doc, company?.name);
+  doc.save(`monthly-cost-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
