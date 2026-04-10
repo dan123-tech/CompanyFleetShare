@@ -41,6 +41,9 @@ public class GloveboxActiveResponse {
         @SerializedName("registrationNumber")
         private String registrationNumber;
 
+        @SerializedName("vehicleCategory")
+        private String vehicleCategory;
+
         @SerializedName("itpExpiresAt")
         private String itpExpiresAt;
 
@@ -66,6 +69,10 @@ public class GloveboxActiveResponse {
 
         public String getRegistrationNumber() {
             return registrationNumber;
+        }
+
+        public String getVehicleCategory() {
+            return vehicleCategory;
         }
 
         public String getItpExpiresAt() {

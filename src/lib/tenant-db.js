@@ -157,6 +157,7 @@ DO $$ BEGIN CREATE TYPE "CarStatus" AS ENUM ('AVAILABLE', 'RESERVED', 'IN_MAINTE
 DO $$ BEGIN CREATE TYPE "ReservationStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'CANCELLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE "ExceededApprovalStatus" AS ENUM ('PENDING_APPROVAL', 'APPROVED', 'REJECTED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE "FuelType" AS ENUM ('Benzine', 'Diesel', 'Electric', 'Hybrid'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE "VehicleCategory" AS ENUM ('Sedan','Suv','Hatchback','Wagon','Coupe','Van','Truck','Other'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE "AuditAction" AS ENUM (
   'CAR_ADDED','CAR_UPDATED','CAR_STATUS_CHANGED','CAR_DELETED',
   'RESERVATION_CREATED','RESERVATION_CANCELLED','RESERVATION_COMPLETED','RESERVATION_EXTENDED',
@@ -244,6 +245,7 @@ CREATE TABLE IF NOT EXISTS "Car" (
   "brand" TEXT NOT NULL,
   "model" TEXT,
   "registrationNumber" TEXT NOT NULL,
+  "vehicleCategory" "VehicleCategory" NOT NULL DEFAULT 'Other',
   "km" INTEGER NOT NULL DEFAULT 0,
   "status" "CarStatus" NOT NULL DEFAULT 'AVAILABLE',
   "fuelType" "FuelType" NOT NULL DEFAULT 'Benzine',

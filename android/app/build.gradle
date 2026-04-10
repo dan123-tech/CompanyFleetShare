@@ -5,6 +5,14 @@ plugins {
 android {
     namespace = "com.company.carsharing"
     compileSdk = 34
+    signingConfigs {
+        // NOTE: This uses the standard debug keystore so the APK is installable without
+        // requiring a separate release keystore in this repo.
+        // For Play Store distribution, replace with a real release keystore.
+        debug {
+            // default debug config
+        }
+    }
     buildFeatures {
         viewBinding = true
     }
@@ -28,6 +36,8 @@ android {
     buildTypes {
         release {
             minifyEnabled = false
+            // Make release APK installable (signed) for direct download installs.
+            signingConfig = signingConfigs.debug
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

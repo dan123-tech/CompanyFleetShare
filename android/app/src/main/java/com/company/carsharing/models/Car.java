@@ -11,6 +11,8 @@ public class Car {
     private String model;
     @SerializedName("registrationNumber")
     private String registrationNumber;
+    @SerializedName("vehicleCategory")
+    private String vehicleCategory;
     @SerializedName("km")
     private Integer km;
     @SerializedName("status")
@@ -26,6 +28,7 @@ public class Car {
     public String getBrand() { return brand; }
     public String getModel() { return model; }
     public String getRegistrationNumber() { return registrationNumber; }
+    public String getVehicleCategory() { return vehicleCategory; }
     public int getKm() { return km != null ? km : 0; }
     public String getStatus() { return status; }
     public String getFuelType() { return fuelType; }

@@ -66,6 +66,9 @@ tmp_frontend
 tmp-neon-data.sql
 neon-import.sql
 
+# Prisma / generated clients (do not commit)
+src/generated/prisma-tenant/
+
 # Android / Gradle (never commit generated or local build output)
 android/.gradle/
 android/**/build/

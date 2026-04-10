@@ -65,6 +65,17 @@ enum FuelType {
   Hybrid
 }
 
+enum VehicleCategory {
+  Sedan
+  Suv
+  Hatchback
+  Wagon
+  Coupe
+  Van
+  Truck
+  Other
+}
+
 enum CompanyTenantStatus {
   PROVISIONING
   READY
@@ -240,6 +251,7 @@ model Car {
   brand                      String
   model                      String?
   registrationNumber         String
+  vehicleCategory            VehicleCategory @default(Other)
   km                         Int        @default(0)
   status                     CarStatus  @default(AVAILABLE)
   fuelType                   FuelType   @default(Benzine) // Benzine | Diesel | Electric | Hybrid

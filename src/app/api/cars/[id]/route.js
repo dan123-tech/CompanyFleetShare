@@ -22,6 +22,7 @@ import { rcaDocumentUrlForClient } from "@/lib/glovebox-ref";
 import { sendItpExpiryAdminEmail, sendRcaExpiryAdminEmail } from "@/lib/email";
 
 const FUEL_TYPES = ["Benzine", "Diesel", "Electric", "Hybrid"];
+const VEHICLE_CATEGORIES = ["Sedan", "Suv", "Hatchback", "Wagon", "Coupe", "Van", "Truck", "Other"];
 const YEAR_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 const patchSchema = z.object({
   brand: z.string().min(1).max(100).optional(),
@@ -32,6 +33,7 @@ const patchSchema = z.object({
     .max(50)
     .transform((s) => s.trim().toUpperCase())
     .optional(),
+  vehicleCategory: z.enum(VEHICLE_CATEGORIES).optional(),
   km: z.number().int().min(0).optional(),
   status: z.enum(["AVAILABLE", "RESERVED", "IN_MAINTENANCE"]).optional(),
   fuelType: z.enum(FUEL_TYPES).optional(),
@@ -80,6 +82,7 @@ export async function GET(_request, { params }) {
         brand: car.brand,
         model: car.model,
         registrationNumber: car.registrationNumber,
+        vehicleCategory: car.vehicleCategory ?? "Other",
         km: car.km,
         status: car.status,
         fuelType: car.fuelType ?? "Benzine",

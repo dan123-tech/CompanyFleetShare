@@ -39,6 +39,7 @@ const T = {
     driverName: "Driver",
     driverEmail: "Driver email",
     vehicleLabel: "Vehicle",
+    vehicleCategory: "Category",
     regNumber: "Registration no.",
     purpose: "Trip purpose",
     reservationId: "Reservation ID",
@@ -77,6 +78,7 @@ const T = {
     driverName: "Conducator auto",
     driverEmail: "Email conducator",
     vehicleLabel: "Autovehicul",
+    vehicleCategory: "Categorie",
     regNumber: "Nr. inmatriculare",
     purpose: "Scopul deplasarii",
     reservationId: "ID rezervare",
@@ -188,6 +190,7 @@ function drawInfoBadge(doc, x, y, label, value, bgColor) {
  * @param {string} p.driverEmail
  * @param {string} p.vehicleLabel
  * @param {string} p.registrationNumber
+ * @param {string} [p.vehicleCategory]
  * @param {string} [p.purpose]
  * @param {Date|string} p.startDate
  * @param {Date|string} p.endDate
@@ -249,6 +252,7 @@ export function buildJourneySheetPdf(p) {
       [t.driverName, p.driverName || "\u2014"],
       [t.driverEmail, p.driverEmail || "\u2014"],
       [t.vehicleLabel, p.vehicleLabel || "\u2014"],
+      [t.vehicleCategory, p.vehicleCategory || "\u2014"],
       [t.regNumber, p.registrationNumber || "\u2014"],
       [t.purpose, p.purpose || "\u2014"],
     ],

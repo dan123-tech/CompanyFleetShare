@@ -196,6 +196,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
   const [addCarKm, setAddCarKm] = useState(0);
   const [addCarStatus, setAddCarStatus] = useState("AVAILABLE");
   const [addCarFuelType, setAddCarFuelType] = useState("Benzine");
+  const [addCarVehicleCategory, setAddCarVehicleCategory] = useState("Other");
   const [addCarConsumption, setAddCarConsumption] = useState("");
   const [addCarConsumptionKwh, setAddCarConsumptionKwh] = useState("");
   const [addCarBatteryLevel, setAddCarBatteryLevel] = useState("");
@@ -901,6 +902,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
       await apiAddCar({
         brand: addCarBrand.trim(),
         registrationNumber: addCarReg.trim().toUpperCase(),
+        vehicleCategory: addCarVehicleCategory,
         km: Number(addCarKm) || 0,
         status: addCarStatus,
         fuelType: addCarFuelType,
@@ -916,6 +918,7 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
       setAddCarKm(0);
       setAddCarStatus("AVAILABLE");
       setAddCarFuelType("Benzine");
+      setAddCarVehicleCategory("Other");
       setAddCarConsumption("");
       setAddCarConsumptionKwh("");
       setAddCarBatteryLevel("");
@@ -1464,6 +1467,24 @@ export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs
                         <option value="Diesel">Diesel</option>
                         <option value="Electric">Electric</option>
                         <option value="Hybrid">Hybrid</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1 min-w-[140px]">
+                      <label htmlFor="add-car-category" className="text-xs font-medium text-slate-600">Category</label>
+                      <select
+                        id="add-car-category"
+                        value={addCarVehicleCategory}
+                        onChange={(e) => setAddCarVehicleCategory(e.target.value)}
+                        className="px-3 py-2 border border-slate-200 rounded-xl focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-ring)] outline-none"
+                      >
+                        <option value="Sedan">Sedan</option>
+                        <option value="Suv">SUV</option>
+                        <option value="Hatchback">Hatchback</option>
+                        <option value="Wagon">Wagon</option>
+                        <option value="Coupe">Coupe</option>
+                        <option value="Van">Van</option>
+                        <option value="Truck">Truck</option>
+                        <option value="Other">Other</option>
                       </select>
                     </div>
                   </div>
