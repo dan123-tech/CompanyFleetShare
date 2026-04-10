@@ -184,7 +184,7 @@ function CarConsumptionCell({ car, onUpdated }) {
 
 export default function AdminDashboard({ user, company, onCompanyUpdated, viewAs, setViewAs }) {
   const { t, formatNumber, formatCurrency, locale } = useI18n();
-  const [section, setSection] = useState("cars");
+  const [section, setSection] = useState("company");
   const [cars, setCars] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);

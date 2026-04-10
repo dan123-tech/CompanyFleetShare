@@ -42,15 +42,33 @@ export async function GET(request, { params }) {
   const company = await getCompanyById(out.session.companyId);
   const vehicleLabel = [reservation.car?.brand, reservation.car?.model].filter(Boolean).join(" ").trim() || "—";
 
+  // For instant reservations the stored endDate may be far in the future (legacy 1-year placeholder).
+  // Cap the displayed planned end to startDate + 1 hour whenever the gap exceeds 2 days.
+  const startMs = new Date(reservation.startDate).getTime();
+  const endMs = new Date(reservation.endDate).getTime();
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  const displayEndDate =
+    endMs - startMs > TWO_DAYS_MS
+      ? new Date(startMs + ONE_HOUR_MS)
+      : reservation.endDate;
+
+  const driverName = reservation.user?.name || "—";
+  const startDateStr = new Date(reservation.startDate)
+    .toLocaleDateString("ro-RO", { timeZone: tz, day: "2-digit", month: "2-digit", year: "numeric" })
+    .replace(/\//g, ".");
+  const safeDriver = driverName.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+  const safeDate = startDateStr.replace(/[^\d.]/g, "");
+
   const pdf = buildJourneySheetPdf({
     companyName: company?.name || "—",
-    driverName: reservation.user?.name || "—",
+    driverName,
     driverEmail: reservation.user?.email || "—",
     vehicleLabel,
     registrationNumber: reservation.car?.registrationNumber || "—",
     purpose: reservation.purpose || "",
     startDate: reservation.startDate,
-    endDate: reservation.endDate,
+    endDate: displayEndDate,
     pickedUpAt: reservation.pickedUpAt,
     releasedAt: reservation.releasedAt,
     releasedKmUsed: reservation.releasedKmUsed,
@@ -62,12 +80,12 @@ export async function GET(request, { params }) {
     lang,
   });
 
-  const safeId = String(reservation.id || "trip").replace(/[^\w-]+/g, "").slice(0, 24);
+  const filename = `journey-sheet-${safeDriver}-${safeDate}.pdf`;
   return new Response(pdf, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="foaie-parcurs-${safeId}.pdf"`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
   });
