@@ -43,8 +43,7 @@ Local URLs:
 
 ## Documentation
 
-- **Web security hardening** (inactivity sign-out, login lockout, API rate limits, HTTP headers): [docs/WEB-SECURITY-UPDATE.md](./docs/WEB-SECURITY-UPDATE.md)
-- **Security overview** (secrets, CSRF, auth rate limits): [docs/SECURITY.md](./docs/SECURITY.md)
+Extended runbooks (`docs/`), thesis drafts (`documentatie_licenta/`), and local credential notes are **intentionally not tracked** in this repository so clones stay minimal. Keep your own copies on your machine (they are listed in `.gitignore`). For security behaviour at a glance, see environment variables below and the source under `src/lib/security/`.
 
 ## Required Environment Variables
 
@@ -89,9 +88,7 @@ Tenant provisioning (Neon, database-per-company):
 4. Point your domain from Cloudflare DNS to Vercel.
 5. Redeploy after env changes.
 
-Detailed guides:
-- [`docs/WEB_HOSTING_GUIDE.md`](docs/WEB_HOSTING_GUIDE.md)
-- [`docs/DEPLOY_CLOUDFLARE_VERCEL_NEON.md`](docs/DEPLOY_CLOUDFLARE_VERCEL_NEON.md)
+For Vercel + Neon + Cloudflare DNS, follow your provider dashboards; optional detailed notes can live in a local `docs/` folder (not in this repo).
 
 ## Identity Verification Flow
 
@@ -107,17 +104,6 @@ The current anti-impersonation implementation includes:
 - Each company is provisioned with a dedicated Neon database/branch.
 - Shared control-plane DB stores auth/session + company-to-tenant mapping.
 - Company-scoped operations resolve `companyId` to tenant connection and execute on that tenant DB.
-
-## Documentation Index
-
-| Document | Purpose |
-|---|---|
-| [`docs/IMPLEMENTATION_LOG.md`](docs/IMPLEMENTATION_LOG.md) | Full implementation and hardening history |
-| [`docs/SECURITY.md`](docs/SECURITY.md) | Security posture and controls |
-| [`docs/DATABASE.md`](docs/DATABASE.md) | PostgreSQL/Neon connection details |
-| [`docs/FAVICON_AND_SEARCH.md`](docs/FAVICON_AND_SEARCH.md) | Favicon + search appearance notes |
-| [`docs/DEPLOY_CLOUDFLARE_VERCEL_NEON.md`](docs/DEPLOY_CLOUDFLARE_VERCEL_NEON.md) | Cloudflare + Vercel topology |
-| [`docs/ITP_AND_INCIDENTS.md`](docs/ITP_AND_INCIDENTS.md) | ITP expiry cron/auto-block + incident reporting/attachments |
 
 ## Related Repository
 

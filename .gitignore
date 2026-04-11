@@ -48,6 +48,20 @@ yarn-error.log*
 
 # Cursor / Claude local worktrees (do not commit)
 .claude/
+.cursor/
+
+# Local-only documentation & thesis (not required to run the app; keep copies on your machine)
+/docs/
+/documentatie_licenta/
+CAR_PROJECT.txt
+CURSOR.md
+cursor_*.md
+DBEAVER-CREDENTIALS.md
+WEB-APP-CREDENTIALS.md
+car_admin_dashboard_redesign.html
+# Word / Office temp (local drafts next to repo root)
+FleetShare_Article*.docx
+~$*.docx
 
 # IDE / editors
 .idea
