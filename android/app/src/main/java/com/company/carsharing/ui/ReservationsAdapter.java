@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import com.company.carsharing.R;
 import com.company.carsharing.models.Reservation;
+import com.company.carsharing.reminders.ReservationAlarmScheduler;
 import com.company.carsharing.util.I18n;
 
 import java.util.ArrayList;
@@ -52,36 +53,50 @@ public class ReservationsAdapter extends BaseAdapter {
             row = LayoutInflater.from(context).inflate(R.layout.item_reservation, parent, false);
         }
         Reservation r = reservations.get(position);
-        String carStr = r.getCar() != null ? r.getCar().getBrand() + " " + (r.getCar().getRegistrationNumber() != null ? r.getCar().getRegistrationNumber() : "") : context.getString(R.string.history_fallback_car);
+        String brand = (r.getCar() != null && r.getCar().getBrand() != null) ? r.getCar().getBrand() : "";
+        String reg = (r.getCar() != null && r.getCar().getRegistrationNumber() != null) ? r.getCar().getRegistrationNumber() : "";
+        String carStr = r.getCar() != null ? (brand + " " + reg).trim() : context.getString(R.string.history_fallback_car);
+        if (carStr.isEmpty()) carStr = context.getString(R.string.history_fallback_car);
         String statusLabel = I18n.reservationStatus(context, r.getStatus());
-        ((TextView) row.findViewById(R.id.res_title)).setText(carStr + " · " + statusLabel);
+        TextView titleTv = row.findViewById(R.id.res_title);
+        TextView subtitleTv = row.findViewById(R.id.res_subtitle);
+        TextView pickupTv = row.findViewById(R.id.res_pickup_code);
+        TextView releaseTv = row.findViewById(R.id.res_release_code);
+        if (titleTv == null || subtitleTv == null || pickupTv == null || releaseTv == null) return row;
+        titleTv.setText(carStr + " · " + statusLabel);
         String sub = (r.getPurpose() != null && !r.getPurpose().isEmpty() ? r.getPurpose() : "")
                 + (r.getCar() != null ? " · " + context.getString(R.string.km_suffix_fmt, r.getCar().getKm()) : "");
         if (r.getStartDate() != null || r.getEndDate() != null) {
             String dates = formatDateRange(r.getStartDate(), r.getEndDate());
             if (!dates.isEmpty()) sub = sub.isEmpty() ? dates : sub + " · " + dates;
         }
-        ((TextView) row.findViewById(R.id.res_subtitle)).setText(sub);
+        subtitleTv.setText(sub);
         String dash = context.getString(R.string.em_dash);
         String pickup = r.getPickupCode() != null ? r.getPickupCode() : dash;
         String release = r.getReleaseCode() != null ? r.getReleaseCode() : dash;
-        ((TextView) row.findViewById(R.id.res_pickup_code)).setText(pickup);
-        ((TextView) row.findViewById(R.id.res_release_code)).setText(release);
+        pickupTv.setText(pickup);
+        releaseTv.setText(release);
         String codeStatus = getCodeTimerStatus(context, r);
         TextView timerTv = row.findViewById(R.id.res_code_timer);
-        timerTv.setText(codeStatus);
-        timerTv.setVisibility(codeStatus.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
+        if (timerTv != null) {
+            timerTv.setText(codeStatus);
+            timerTv.setVisibility(codeStatus.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
+        }
         boolean active = "ACTIVE".equalsIgnoreCase(r.getStatus());
         boolean missingCodes = active && r.getPickupCode() == null;
         View getCodesBtn = row.findViewById(R.id.res_get_codes);
-        getCodesBtn.setVisibility(missingCodes ? View.VISIBLE : View.GONE);
-        getCodesBtn.setOnClickListener(v -> listener.onRequestCodes(r));
+        if (getCodesBtn != null) {
+            getCodesBtn.setVisibility(missingCodes ? View.VISIBLE : View.GONE);
+            getCodesBtn.setOnClickListener(v -> listener.onRequestCodes(r));
+        }
         View releaseBtn = row.findViewById(R.id.res_release);
         View cancelBtn = row.findViewById(R.id.res_cancel);
-        releaseBtn.setVisibility(active ? View.VISIBLE : View.GONE);
-        cancelBtn.setVisibility(active ? View.VISIBLE : View.GONE);
-        releaseBtn.setOnClickListener(v -> listener.onRelease(r));
-        cancelBtn.setOnClickListener(v -> listener.onCancel(r));
+        if (releaseBtn != null && cancelBtn != null) {
+            releaseBtn.setVisibility(active ? View.VISIBLE : View.GONE);
+            cancelBtn.setVisibility(active ? View.VISIBLE : View.GONE);
+            releaseBtn.setOnClickListener(v -> listener.onRelease(r));
+            cancelBtn.setOnClickListener(v -> listener.onCancel(r));
+        }
         return row;
     }
 
@@ -110,9 +125,8 @@ public class ReservationsAdapter extends BaseAdapter {
         String validFrom = r.getCodeValidFrom();
         if (validFrom == null || validFrom.isEmpty()) return "";
         try {
-            java.text.SimpleDateFormat iso = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-            iso.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-            long fromMs = iso.parse(validFrom).getTime();
+            long fromMs = ReservationAlarmScheduler.parseIsoToMillis(validFrom);
+            if (fromMs <= 0) return "";
             long now = System.currentTimeMillis();
             long windowMs = TimeUnit.MINUTES.toMillis(30);
             if (now < fromMs) return ctx.getString(R.string.code_valid_in_fmt, (int) ((fromMs - now) / 60000));

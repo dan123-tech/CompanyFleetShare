@@ -169,7 +169,7 @@ export default function HomePageClient() {
         <section className="max-w-6xl mx-auto px-4 sm:px-5 py-12 sm:py-16">
           <div className="text-center mb-8 sm:mb-10">
             <SectionLabel>Web Application</SectionLabel>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3" style={{ color: "#ffffff" }}>
               Everything you need to run a modern fleet
             </h2>
             <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.7)" }}>

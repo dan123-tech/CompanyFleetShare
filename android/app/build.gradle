@@ -20,8 +20,8 @@ android {
         applicationId = "com.company.carsharing"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.0.5"
+        versionCode = 7
+        versionName = "1.0.6"
         // Public HTTPS origin of your FleetShare web app (Vercel + Neon, etc.). Override in android/gradle.properties.
         def base = project.findProperty("fleetshareApiBaseUrl")
         if (base == null || base.toString().trim().isEmpty()) {

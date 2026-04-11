@@ -52,6 +52,12 @@ public class MyReservationsFragment extends Fragment implements ReservationsAdap
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
+
+    @Override
     public void onRelease(Reservation r) {
         int fallbackKm = r.getCar() != null ? r.getCar().getKm() : 0;
         AuthRepository authRepo = new AuthRepository(requireContext());
@@ -209,30 +215,39 @@ public class MyReservationsFragment extends Fragment implements ReservationsAdap
     }
 
     private void loadReservations() {
+        if (!isAdded()) return;
         RetrofitClient.getApiService(new AuthRepository(requireContext()).getSessionPreferences())
                 .getReservations(null, "1").enqueue(new Callback<List<Reservation>>() {
             @Override
             public void onResponse(Call<List<Reservation>> call, Response<List<Reservation>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Reservation> body = response.body();
-                    OfflineReadCache.saveMyReservations(requireContext(), body);
-                    BookingWidgetUpdater.updateFromReservations(requireContext(), body);
-                    adapter.setReservations(body);
-                    binding.emptyText.setVisibility(body.isEmpty() ? View.VISIBLE : View.GONE);
-                    if (Build.VERSION.SDK_INT >= 33
-                            && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+                if (!isAdded() || binding == null) return;
+                try {
+                    if (response.isSuccessful() && response.body() != null) {
+                        List<Reservation> body = response.body();
+                        OfflineReadCache.saveMyReservations(requireContext(), body);
+                        BookingWidgetUpdater.updateFromReservations(requireContext(), body);
+                        adapter.setReservations(body);
+                        binding.emptyText.setVisibility(body.isEmpty() ? View.VISIBLE : View.GONE);
+                        if (Build.VERSION.SDK_INT >= 33
+                                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                && !isStateSaved()) {
+                            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+                        }
+                        AuthRepository repo = new AuthRepository(requireContext());
+                        User u = repo.getSessionPreferences().getUser();
+                        if (u != null && u.getId() != null) {
+                            ReservationAlarmScheduler.schedule(requireContext(), body, u.getId());
+                        }
                     }
-                    AuthRepository repo = new AuthRepository(requireContext());
-                    User u = repo.getSessionPreferences().getUser();
-                    if (u != null && u.getId() != null) {
-                        ReservationAlarmScheduler.schedule(requireContext(), body, u.getId());
+                } catch (RuntimeException e) {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(), getString(R.string.network_error), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
             @Override
             public void onFailure(Call<List<Reservation>> call, Throwable t) {
-                if (getActivity() == null) return;
+                if (!isAdded() || binding == null) return;
                 List<Reservation> cached = OfflineReadCache.loadMyReservations(requireContext());
                 if (!cached.isEmpty()) {
                     adapter.setReservations(cached);

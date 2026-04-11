@@ -73,48 +73,51 @@ public final class ReservationAlarmScheduler {
             if (r == null || r.getId() == null || r.getUserId() == null) continue;
             if (!currentUserId.equals(r.getUserId())) continue;
             if (!"ACTIVE".equalsIgnoreCase(r.getStatus())) continue;
+            try {
+                long startMs = parseIsoToMillis(r.getStartDate());
+                long endMs = parseIsoToMillis(r.getEndDate());
+                if (startMs <= 0 || endMs <= 0) continue;
 
-            long startMs = parseIsoToMillis(r.getStartDate());
-            long endMs = parseIsoToMillis(r.getEndDate());
-            if (startMs <= 0 || endMs <= 0) continue;
+                boolean longBooking = (endMs - startMs) > MAX_SPAN_MS;
+                String carLabel = buildCarLabel(r);
+                String pickup = r.getPickupCode() != null ? r.getPickupCode().trim() : "";
 
-            boolean longBooking = (endMs - startMs) > MAX_SPAN_MS;
-            String carLabel = buildCarLabel(r);
-            String pickup = r.getPickupCode() != null ? r.getPickupCode().trim() : "";
-
-            long beforeAt = startMs - BEFORE_START_MS;
-            if (beforeAt > now) {
-                String key = r.getId() + ":before15";
-                String title = app.getString(com.company.carsharing.R.string.booking_before_15_title);
-                String body = carLabel.isEmpty()
-                        ? app.getString(com.company.carsharing.R.string.booking_before_15_body)
-                        : app.getString(com.company.carsharing.R.string.booking_before_15_body_car, carLabel);
-                scheduleOne(app, am, newKeys, key, beforeAt, title, body);
-            }
-
-            if (startMs > now) {
-                String key = r.getId() + ":start";
-                String title = app.getString(com.company.carsharing.R.string.booking_start_title);
-                String body;
-                if (!pickup.isEmpty()) {
-                    body = carLabel.isEmpty()
-                            ? app.getString(com.company.carsharing.R.string.booking_start_body_with_code, pickup)
-                            : app.getString(com.company.carsharing.R.string.booking_start_body_car_with_code, carLabel, pickup);
-                } else {
-                    body = carLabel.isEmpty()
-                            ? app.getString(com.company.carsharing.R.string.booking_start_body)
-                            : app.getString(com.company.carsharing.R.string.booking_start_body_car, carLabel);
+                long beforeAt = startMs - BEFORE_START_MS;
+                if (beforeAt > now) {
+                    String key = r.getId() + ":before15";
+                    String title = app.getString(com.company.carsharing.R.string.booking_before_15_title);
+                    String body = carLabel.isEmpty()
+                            ? app.getString(com.company.carsharing.R.string.booking_before_15_body)
+                            : app.getString(com.company.carsharing.R.string.booking_before_15_body_car, carLabel);
+                    scheduleOne(app, am, newKeys, key, beforeAt, title, body);
                 }
-                scheduleOne(app, am, newKeys, key, startMs, title, body);
-            }
 
-            if (!longBooking && endMs > now) {
-                String key = r.getId() + ":end";
-                scheduleOne(app, am, newKeys, key, endMs,
-                        app.getString(com.company.carsharing.R.string.booking_end_title),
-                        carLabel.isEmpty()
-                                ? app.getString(com.company.carsharing.R.string.booking_end_body)
-                                : app.getString(com.company.carsharing.R.string.booking_end_body_car, carLabel));
+                if (startMs > now) {
+                    String key = r.getId() + ":start";
+                    String title = app.getString(com.company.carsharing.R.string.booking_start_title);
+                    String body;
+                    if (!pickup.isEmpty()) {
+                        body = carLabel.isEmpty()
+                                ? app.getString(com.company.carsharing.R.string.booking_start_body_with_code, pickup)
+                                : app.getString(com.company.carsharing.R.string.booking_start_body_car_with_code, carLabel, pickup);
+                    } else {
+                        body = carLabel.isEmpty()
+                                ? app.getString(com.company.carsharing.R.string.booking_start_body)
+                                : app.getString(com.company.carsharing.R.string.booking_start_body_car, carLabel);
+                    }
+                    scheduleOne(app, am, newKeys, key, startMs, title, body);
+                }
+
+                if (!longBooking && endMs > now) {
+                    String key = r.getId() + ":end";
+                    scheduleOne(app, am, newKeys, key, endMs,
+                            app.getString(com.company.carsharing.R.string.booking_end_title),
+                            carLabel.isEmpty()
+                                    ? app.getString(com.company.carsharing.R.string.booking_end_body)
+                                    : app.getString(com.company.carsharing.R.string.booking_end_body_car, carLabel));
+                }
+            } catch (RuntimeException ex) {
+                Log.w(TAG, "Skip alarms for reservation " + r.getId(), ex);
             }
         }
 

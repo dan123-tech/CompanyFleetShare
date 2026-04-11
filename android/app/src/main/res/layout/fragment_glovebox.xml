@@ -34,9 +34,13 @@
                     android:id="@+id/glovebox_empty"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="12dp"
+                    android:gravity="center"
+                    android:paddingTop="48dp"
+                    android:paddingBottom="24dp"
+                    android:paddingHorizontal="24dp"
                     android:text="@string/glovebox_no_active"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textSize="16sp"
+                    android:lineSpacingMultiplier="1.4"
                     android:textColor="@color/on_surface"
                     android:visibility="gone" />
 

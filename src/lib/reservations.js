@@ -231,11 +231,14 @@ export async function listReservations(options) {
 /**
  * If reservation is ACTIVE and missing pickup_code, generate and persist codes (backfill legacy).
  * @param {Object} r - reservation from listReservations
+ * @param {string} [companyIdFallback] - company scope when `r.car` is missing (avoids getTenantPrisma(undefined))
  * @returns {Promise<Object>} same or updated reservation with pickup_code/code_valid_from
  */
-export async function ensureReservationHasCodes(r) {
-  const tenant = await getTenantPrisma(r.car?.companyId);
+export async function ensureReservationHasCodes(r, companyIdFallback) {
   if (r.status !== "ACTIVE" || r.pickup_code) return r;
+  const companyId = r.car?.companyId ?? companyIdFallback;
+  if (!companyId) return r;
+  const tenant = await getTenantPrisma(companyId);
   const startDate = r.startDate ? new Date(r.startDate) : new Date();
   const pickup_code = generateSixDigitCode();
   // Code valid for 30 min from reservation start (same rule as create)

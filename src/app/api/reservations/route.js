@@ -107,7 +107,7 @@ export async function GET(request) {
   };
   if (!isAdmin || mineOnly) options.userId = out.session.userId;
   const list = await listReservations(options);
-  const withCodes = await Promise.all(list.map(ensureReservationHasCodes));
+  const withCodes = await Promise.all(list.map((r) => ensureReservationHasCodes(r, out.session.companyId)));
   return jsonResponse(
     withCodes.map((r) => {
       const isOwner = r.userId === out.session.userId;
