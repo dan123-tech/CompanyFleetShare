@@ -48,8 +48,8 @@ function FeatureCard({ icon: Icon, title, desc, accent }) {
         <Icon className="w-5 h-5" style={{ color: accent ?? "#7ec0ea" }} strokeWidth={1.7} />
       </div>
       <div>
-        <h3 className="font-semibold text-white text-[14px] mb-1 leading-snug">{title}</h3>
-        <p className="text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.48)" }}>{desc}</p>
+        <h3 className="font-semibold text-[14px] mb-1 leading-snug" style={{ color: COL.accent }}>{title}</h3>
+        <p className="text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>{desc}</p>
       </div>
     </div>
   );
@@ -66,7 +66,7 @@ function StepCard({ num, title, desc }) {
       </div>
       <div>
         <h4 className="font-semibold text-white text-sm mb-1">{title}</h4>
-        <p className="text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
+        <p className="text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>{desc}</p>
       </div>
     </div>
   );
@@ -125,37 +125,40 @@ export default function HomePageClient() {
               style={{ background: "radial-gradient(circle, #f5a623 0%, transparent 70%)" }} />
           </div>
 
-          <div className="relative max-w-6xl mx-auto px-5 pt-16 pb-20 text-center">
-            <Badge>Fleet Management SaaS</Badge>
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-5 pt-12 pb-16 text-center">
+            <Badge>Fleet Management</Badge>
 
-            <h1 className="mt-5 text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight leading-[1.1] mb-5">
-              Manage your entire fleet{" "}
-              <span style={{ color: COL.accent }}>from one place</span>
+            <h1 className="mt-5 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-[1.15] mb-4">
+              <span style={{ color: COL.accent }}>Manage</span>
+              <span className="text-white"> your entire fleet</span>
+              <br />
+              <span className="text-white">from </span>
+              <span style={{ color: COL.accent }}>one place</span>
             </h1>
-            <p className="text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <p className="text-sm sm:text-base max-w-xl mx-auto mb-7 leading-relaxed px-2" style={{ color: "rgba(255,255,255,0.65)" }}>
               FleetShare gives fleet managers and drivers a complete toolkit — web dashboard, Android app, automated
               journey sheets, AI identity checks, live analytics and much more.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-14">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center mb-10">
               <Link href="/register"
-                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.45)] transition-all w-full sm:w-auto">
+                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.45)] transition-all">
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/prices"
-                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold text-sm transition-all w-full sm:w-auto"
-                style={{ border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.05)" }}>
+                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold text-sm transition-all"
+                style={{ border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.85)", background: "rgba(255,255,255,0.05)" }}>
                 View Pricing
               </Link>
             </div>
 
             {/* Stats bar */}
-            <div className="inline-grid grid-cols-2 sm:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-white/10 w-full max-w-2xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-white/10 max-w-xl mx-auto">
               {STATS.map((s) => (
-                <div key={s.label} className="flex flex-col items-center py-4 px-3"
+                <div key={s.label} className="flex flex-col items-center py-4 px-2"
                   style={{ background: "rgba(255,255,255,0.05)" }}>
-                  <span className="text-lg font-bold text-white">{s.value}</span>
-                  <span className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
+                  <span className="text-base sm:text-lg font-bold text-white">{s.value}</span>
+                  <span className="text-[10px] sm:text-[11px] mt-0.5 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>{s.label}</span>
                 </div>
               ))}
             </div>
@@ -163,34 +166,34 @@ export default function HomePageClient() {
         </section>
 
         {/* ── WEB APP FEATURES ── */}
-        <section className="max-w-6xl mx-auto px-5 py-16">
-          <div className="text-center mb-10">
+        <section className="max-w-6xl mx-auto px-4 sm:px-5 py-12 sm:py-16">
+          <div className="text-center mb-8 sm:mb-10">
             <SectionLabel>Web Application</SectionLabel>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
               Everything you need to run a modern fleet
             </h2>
-            <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.7)" }}>
               A full-featured web dashboard built for fleet managers — from the first car registration to monthly cost reports.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
             {WEB_FEATURES.map((f) => <FeatureCard key={f.title} {...f} />)}
           </div>
         </section>
 
         {/* ── ANDROID APP FEATURES ── */}
         <section style={{ background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="max-w-6xl mx-auto px-5 py-16">
-            <div className="text-center mb-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-5 py-12 sm:py-16">
+            <div className="text-center mb-8 sm:mb-10">
               <SectionLabel>Android Application</SectionLabel>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
                 Full fleet power in your pocket
               </h2>
-              <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.7)" }}>
                 The native Android app mirrors every web feature with a Material Design 3 interface, push notifications and offline-capable views.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
               {ANDROID_FEATURES.map((f) => <FeatureCard key={f.title} {...f} accent="#86efac" />)}
             </div>
             <div className="mt-8 text-center">
@@ -203,11 +206,11 @@ export default function HomePageClient() {
         </section>
 
         {/* ── HOW IT WORKS ── */}
-        <section className="max-w-6xl mx-auto px-5 py-16">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+        <section className="max-w-6xl mx-auto px-4 sm:px-5 py-12 sm:py-16">
+          <div className="grid md:grid-cols-2 gap-8 sm:gap-10 items-start">
             <div>
               <SectionLabel>How it works</SectionLabel>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: COL.accent }}>
                 Up and running in minutes
               </h2>
               <div className="flex flex-col gap-7">
@@ -234,7 +237,7 @@ export default function HomePageClient() {
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-start gap-3">
                   <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#86efac" }} />
-                  <span className="text-sm leading-snug" style={{ color: "rgba(255,255,255,0.72)" }}>{text}</span>
+                  <span className="text-sm leading-snug text-white">{text}</span>
                 </div>
               ))}
             </div>
@@ -242,8 +245,8 @@ export default function HomePageClient() {
         </section>
 
         {/* ── CTA BANNER ── */}
-        <section className="max-w-6xl mx-auto px-5 pb-16">
-          <div className="relative overflow-hidden rounded-2xl p-8 sm:p-12 text-center"
+        <section className="max-w-6xl mx-auto px-4 sm:px-5 pb-12 sm:pb-16">
+          <div className="relative overflow-hidden rounded-2xl p-7 sm:p-12 text-center"
             style={{ background: "linear-gradient(135deg, rgba(24,95,165,0.35) 0%, rgba(29,78,216,0.25) 100%)", border: "1px solid rgba(24,95,165,0.4)" }}>
             <div className="pointer-events-none absolute inset-0"
               style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(24,95,165,0.3) 0%, transparent 70%)" }} />
@@ -251,16 +254,16 @@ export default function HomePageClient() {
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
                 Ready to modernise your fleet?
               </h2>
-              <p className="text-sm max-w-md mx-auto mb-7" style={{ color: "rgba(255,255,255,0.6)" }}>
+              <p className="text-sm max-w-md mx-auto mb-7 text-white">
                 Start for free — no credit card required. Set up your fleet in under 10 minutes.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
                 <Link href="/register"
                   className="flex items-center justify-center gap-2 h-12 px-8 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.5)] transition-all">
                   Create Free Account <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link href="/contact"
-                  className="flex items-center justify-center gap-2 h-12 px-8 rounded-xl font-semibold text-sm border border-white/20 text-white/80 hover:bg-white/5 transition-all">
+                  className="flex items-center justify-center gap-2 h-12 px-8 rounded-xl font-semibold text-sm border border-white/20 text-white hover:bg-white/10 transition-all">
                   Talk to Sales
                 </Link>
               </div>
@@ -269,8 +272,8 @@ export default function HomePageClient() {
         </section>
 
         {/* ── EXPLORE LINKS ── */}
-        <section className="max-w-6xl mx-auto px-5 pb-16">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="max-w-6xl mx-auto px-4 sm:px-5 pb-12 sm:pb-16">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { href: "/products/mobile", label: "Android App",  hint: "Features, download link and technical specs for the native mobile app." },
               { href: "/prices",          label: "Pricing",       hint: "Transparent plans for teams of every size, plus self-hosted options." },
@@ -278,10 +281,10 @@ export default function HomePageClient() {
               { href: "/support",         label: "Support Docs",  hint: "Guides, FAQs and setup instructions for admins and drivers." },
             ].map((c) => (
               <Link key={c.href} href={c.href}
-                className="group flex flex-col gap-2 p-5 rounded-2xl border hover:border-white/20 transition-all"
+                className="group flex flex-col gap-2 p-4 sm:p-5 rounded-2xl border hover:border-white/20 transition-all"
                 style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)" }}>
-                <span className="text-sm font-semibold text-white/90">{c.label}</span>
-                <span className="text-[12px] leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>{c.hint}</span>
+                <span className="text-xs sm:text-sm font-semibold text-white/90">{c.label}</span>
+                <span className="text-[11px] sm:text-[12px] leading-relaxed hidden sm:block" style={{ color: "rgba(255,255,255,0.55)" }}>{c.hint}</span>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#7ec0ea] mt-auto pt-2 group-hover:gap-2 transition-all">
                   Explore <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
                 </span>
