@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import {
   Smartphone, Zap, Bell, BookOpen, ClipboardList, BarChart2,
   Calendar, MapPin, TrendingUp, Shield, Download, CheckCircle,
@@ -9,8 +10,31 @@ import {
 import LandingSiteHeader from "@/components/landing/LandingSiteHeader";
 import LandingSiteFooter from "@/components/landing/LandingSiteFooter";
 import { LANDING_COL } from "@/components/landing/landingTheme";
+import { useI18n } from "@/i18n/I18nProvider";
 
 const COL = LANDING_COL;
+
+/** Same-site default or full URL via NEXT_PUBLIC_ANDROID_DOWNLOAD_URL */
+function getAndroidApkHref() {
+  const u = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL?.trim() : "";
+  return u || "/downloads/fleetshare.apk";
+}
+
+function ApkDownloadAnchor({ className, children }) {
+  const href = useMemo(() => getAndroidApkHref(), []);
+  const absolute = /^https?:\/\//i.test(href);
+  return (
+    <a
+      href={href}
+      className={className}
+      {...(absolute
+        ? { target: "_blank", rel: "noopener noreferrer" }
+        : { download: "fleetshare.apk" })}
+    >
+      {children}
+    </a>
+  );
+}
 
 function Badge({ children }) {
   return (
@@ -112,6 +136,8 @@ const FEATURES = [
 ];
 
 export default function MobileAppPageClient() {
+  const { t } = useI18n();
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: COL.base }}>
       <LandingSiteHeader />
@@ -134,10 +160,12 @@ export default function MobileAppPageClient() {
               The native Android app gives drivers and fleet managers access to every feature of FleetShare — designed with Material Design 3 for a fast, modern experience on any Android device.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/download"
-                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.4)] transition-all">
-                <Download className="w-4 h-4" /> Download APK
-              </Link>
+              <ApkDownloadAnchor
+                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.4)] transition-all"
+              >
+                <Download className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                {t("landing.mobileApp.downloadApk")}
+              </ApkDownloadAnchor>
               <Link href="/register"
                 className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold text-sm border border-white/15 text-white/80 hover:bg-white/5 transition-all">
                 Create Account First
@@ -216,13 +244,19 @@ export default function MobileAppPageClient() {
           <div className="relative overflow-hidden rounded-2xl p-8 sm:p-12 text-center"
             style={{ background: "linear-gradient(135deg, rgba(134,239,172,0.12) 0%, rgba(24,95,165,0.25) 100%)", border: "1px solid rgba(134,239,172,0.2)" }}>
             <h2 className="text-2xl font-bold text-white mb-3">Ready to install?</h2>
-            <p className="text-sm mb-7" style={{ color: "rgba(255,255,255,0.55)" }}>
-              Create your account first, then download the APK from your dashboard.
+            <p className="text-sm mb-7 max-w-lg mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+              {t("landing.mobileApp.installFooterBody")}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
+              <ApkDownloadAnchor
+                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.45)] transition-all"
+              >
+                <Download className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                {t("landing.mobileApp.installFooterDownloadAgain")}
+              </ApkDownloadAnchor>
               <Link href="/register"
-                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl text-white font-semibold text-sm bg-[#185fa5] hover:bg-[#1d4ed8] shadow-[0_4px_20px_rgba(24,95,165,0.45)] transition-all">
-                Create Account <ArrowRight className="w-4 h-4" />
+                className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold text-sm border border-white/15 text-white/80 hover:bg-white/5 transition-all">
+                Create Account <ArrowRight className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
               </Link>
               <Link href="/contact"
                 className="flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold text-sm border border-white/15 text-white/80 hover:bg-white/5 transition-all">

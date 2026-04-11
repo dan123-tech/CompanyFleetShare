@@ -81,7 +81,10 @@
       "bullet8": "Instrumente admin unde rolul permite: mașini, utilizatori, invitații, istoric, setări companie, statistici, jurnale audit, mentenanță, incidente, rapoarte și calendar flotă.",
       "bullet9": "Încărcare și aprobare permis de conducere, aliniată platformei web, înainte de rezervare.",
       "ctaRegister": "Creează cont web",
-      "ctaSupport": "Centru suport"
+      "ctaSupport": "Centru suport",
+      "downloadApk": "Descarcă APK",
+      "installFooterBody": "Descarcă APK-ul pe telefon, permite instalarea din browser dacă e nevoie, apoi autentifică-te cu contul FleetShare al organizației tale.",
+      "installFooterDownloadAgain": "Descarcă din nou APK-ul"
     },
     "pricesPage": {
       "title": "Prețuri & server companie",

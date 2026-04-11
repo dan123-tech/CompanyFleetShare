@@ -186,7 +186,7 @@ export default function HomePageClient() {
           <div className="max-w-6xl mx-auto px-4 sm:px-5 py-12 sm:py-16">
             <div className="text-center mb-8 sm:mb-10">
               <SectionLabel>Android Application</SectionLabel>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3" style={{ color: COL.accent }}>
                 Full fleet power in your pocket
               </h2>
               <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.7)" }}>
@@ -194,7 +194,7 @@ export default function HomePageClient() {
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
-              {ANDROID_FEATURES.map((f) => <FeatureCard key={f.title} {...f} accent="#86efac" />)}
+              {ANDROID_FEATURES.map((f) => <FeatureCard key={f.title} {...f} accent="#ffffff" />)}
             </div>
             <div className="mt-8 text-center">
               <Link href="/products/mobile"
@@ -251,7 +251,7 @@ export default function HomePageClient() {
             <div className="pointer-events-none absolute inset-0"
               style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(24,95,165,0.3) 0%, transparent 70%)" }} />
             <div className="relative">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: COL.accent }}>
                 Ready to modernise your fleet?
               </h2>
               <p className="text-sm max-w-md mx-auto mb-7 text-white">

@@ -81,7 +81,10 @@
       "bullet8": "Admin tools where your role allows: manage cars and users, invites, history, company settings, statistics, audit logs, maintenance, incidents, reports, and fleet calendar.",
       "bullet9": "Driving licence upload and approval flow aligned with the web platform before booking.",
       "ctaRegister": "Create a web account",
-      "ctaSupport": "Support centre"
+      "ctaSupport": "Support centre",
+      "downloadApk": "Download APK",
+      "installFooterBody": "Download the APK on your phone, allow installs from your browser if prompted, then sign in with your organisation’s FleetShare account.",
+      "installFooterDownloadAgain": "Get the APK again"
     },
     "pricesPage": {
       "title": "Prices & company server",
