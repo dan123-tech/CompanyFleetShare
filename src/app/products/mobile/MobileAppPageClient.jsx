@@ -199,7 +199,7 @@ export default function MobileAppPageClient() {
         {/* ── ALL FEATURES ── */}
         <section className="max-w-6xl mx-auto px-5 py-16">
           <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Everything in one app</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: "#ffffff" }}>Everything in one app</h2>
             <p className="text-sm max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
               {FEATURES.length} features built natively for Android — from booking to billing.
             </p>

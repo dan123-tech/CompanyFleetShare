@@ -279,7 +279,7 @@ export default function PricesPageClient() {
 
         {/* ── FAQ ── */}
         <section className="max-w-3xl mx-auto px-5 py-14">
-          <h2 className="text-2xl font-bold text-white text-center mb-8">Frequently asked questions</h2>
+          <h2 className="text-2xl font-bold text-center mb-8" style={{ color: "#ffffff" }}>Frequently asked questions</h2>
           <div className="flex flex-col gap-4">
             {FAQS.map((faq) => (
               <div key={faq.q} className="p-5 rounded-2xl border"
@@ -300,7 +300,7 @@ export default function PricesPageClient() {
         <section className="max-w-6xl mx-auto px-5 pb-16">
           <div className="relative overflow-hidden rounded-2xl p-8 sm:p-12 text-center"
             style={{ background: "linear-gradient(135deg, rgba(24,95,165,0.3) 0%, rgba(29,78,216,0.2) 100%)", border: "1px solid rgba(24,95,165,0.4)" }}>
-            <h2 className="text-2xl font-bold text-white mb-3">Still have questions?</h2>
+            <h2 className="text-2xl font-bold mb-3" style={{ color: "#ffffff" }}>Still have questions?</h2>
             <p className="text-sm mb-7 max-w-md mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
               Our team is happy to walk you through the plans and help you choose the right one.
             </p>
