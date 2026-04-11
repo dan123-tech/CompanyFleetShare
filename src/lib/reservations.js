@@ -104,6 +104,9 @@ async function getNextActiveReservationStartAfter(tx, carId, after) {
  * @returns {Promise<Object>} Created reservation
  */
 export async function createReservation(userId, carId, startDate, endDate, purpose, companyId) {
+  if (startDate.getTime() < Date.now()) {
+    throw new Error("Start time must be now or in the future");
+  }
   const resolvedCompanyId =
     companyId || (await prisma.car.findUnique({ where: { id: carId }, select: { companyId: true } }))?.companyId;
   const tenant = await getTenantPrisma(resolvedCompanyId);

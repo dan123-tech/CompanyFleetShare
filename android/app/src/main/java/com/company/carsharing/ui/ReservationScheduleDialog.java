@@ -266,6 +266,12 @@ public final class ReservationScheduleDialog {
                     errorTv.setVisibility(View.VISIBLE);
                     return;
                 }
+                long nowMs = System.currentTimeMillis();
+                if (startMs[0] < nowMs) {
+                    errorTv.setText(ctx.getString(R.string.start_must_be_future));
+                    errorTv.setVisibility(View.VISIBLE);
+                    return;
+                }
                 body.put("startDate", isoFormat().format(new java.util.Date(startMs[0])));
                 body.put("endDate", isoFormat().format(new java.util.Date(endMs[0])));
             }

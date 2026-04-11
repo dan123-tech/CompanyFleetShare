@@ -261,6 +261,7 @@
     <string name="failed_load_cars">Failed to load cars</string>
     <string name="select_a_car">Select a car</string>
     <string name="end_after_start">End must be after start</string>
+    <string name="start_must_be_future">Start must be now or in the future</string>
 
     <!-- My reservations -->
     <string name="my_reservations_empty">No reservations yet. Tap the + button below to make a reservation from your phone.</string>

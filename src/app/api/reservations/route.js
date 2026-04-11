@@ -166,6 +166,9 @@ export async function POST(request) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       if (end <= start) return errorResponse("End must be after start", 422);
+      if (start.getTime() < Date.now()) {
+        return errorResponse("Start time must be now or in the future", 422);
+      }
       reservation = await createReservation(out.session.userId, carId, start, end, purpose, out.session.companyId);
       // Future time-window bookings must not flip the car to RESERVED immediately; the car stays
       // AVAILABLE until the slot starts so others can book non-overlapping periods (e.g. 12–14

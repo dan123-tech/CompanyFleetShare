@@ -283,6 +283,11 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
         setScheduleSubmitting(false);
         return;
       }
+      if (new Date(scheduleStart).getTime() < Date.now()) {
+        setError("Start must be now or in the future");
+        setScheduleSubmitting(false);
+        return;
+      }
       await apiCreateReservation(scheduleModal.id, schedulePurpose || null, start, end);
       setScheduleModal(null);
       load();

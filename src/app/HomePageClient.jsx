@@ -35,7 +35,7 @@ function SectionLabel({ children }) {
   );
 }
 
-function FeatureCard({ icon: Icon, title, desc, accent }) {
+function FeatureCard({ icon: Icon, title, desc, accent, titleColor }) {
   return (
     <div
       className="group p-5 rounded-2xl border flex flex-col gap-3 transition-all hover:border-white/20"
@@ -48,7 +48,7 @@ function FeatureCard({ icon: Icon, title, desc, accent }) {
         <Icon className="w-5 h-5" style={{ color: accent ?? "#7ec0ea" }} strokeWidth={1.7} />
       </div>
       <div>
-        <h3 className="font-semibold text-[14px] mb-1 leading-snug" style={{ color: COL.accent }}>{title}</h3>
+        <h3 className="font-semibold text-[14px] mb-1 leading-snug" style={{ color: titleColor ?? COL.accent }}>{title}</h3>
         <p className="text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>{desc}</p>
       </div>
     </div>
@@ -194,7 +194,9 @@ export default function HomePageClient() {
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
-              {ANDROID_FEATURES.map((f) => <FeatureCard key={f.title} {...f} accent="#ffffff" />)}
+              {ANDROID_FEATURES.map((f) => (
+                <FeatureCard key={f.title} {...f} accent="#7ec0ea" titleColor="#ffffff" />
+              ))}
             </div>
             <div className="mt-8 text-center">
               <Link href="/products/mobile"

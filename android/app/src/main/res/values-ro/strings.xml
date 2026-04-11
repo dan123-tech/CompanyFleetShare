@@ -235,6 +235,7 @@
     <string name="failed_load_cars">Încărcarea mașinilor a eșuat</string>
     <string name="select_a_car">Selectează o mașină</string>
     <string name="end_after_start">Sfârșitul trebuie să fie după început</string>
+    <string name="start_must_be_future">Începutul trebuie să fie acum sau în viitor</string>
 
     <string name="my_reservations_empty">Încă nu ai rezervări. Atinge + de mai jos pentru a rezerva de pe telefon.</string>
     <string name="last_known_odometer_fmt">Ultimul kilometraj cunoscut: %1$d km (trebuie ≥ această valoare)</string>
