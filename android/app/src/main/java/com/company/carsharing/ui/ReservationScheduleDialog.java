@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
+import com.google.android.material.textfield.TextInputLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -137,6 +138,28 @@ public final class ReservationScheduleDialog {
         return null;
     }
 
+    private static void clearScheduleFieldErrors(TextInputLayout startLayout, TextInputLayout endLayout, TextView errorTv) {
+        if (startLayout != null) startLayout.setError(null);
+        if (endLayout != null) endLayout.setError(null);
+        if (errorTv != null) {
+            errorTv.setText("");
+            errorTv.setVisibility(View.GONE);
+        }
+    }
+
+    /** Banner + outlined fields + toast so validation is obvious on small screens and over the keyboard. */
+    private static void showScheduleValidationIssue(android.content.Context ctx, TextView errorTv,
+            TextInputLayout startLayout, TextInputLayout endLayout, String message,
+            boolean errStart, boolean errEnd) {
+        if (errorTv != null) {
+            errorTv.setText(message);
+            errorTv.setVisibility(View.VISIBLE);
+        }
+        if (startLayout != null) startLayout.setError(errStart ? message : null);
+        if (endLayout != null) endLayout.setError(errEnd ? message : null);
+        Toast.makeText(ctx, message, Toast.LENGTH_LONG).show();
+    }
+
     public static void show(Fragment fragment, Car fixedCar, Runnable onSuccess) {
         if (fragment.getContext() == null) return;
         android.content.Context ctx = fragment.requireContext();
@@ -148,6 +171,8 @@ public final class ReservationScheduleDialog {
         com.google.android.material.textfield.TextInputEditText startEt = dialogView.findViewById(R.id.dialog_res_start);
         com.google.android.material.textfield.TextInputEditText endEt = dialogView.findViewById(R.id.dialog_res_end);
         TextView errorTv = dialogView.findViewById(R.id.dialog_res_error);
+        TextInputLayout startLayout = dialogView.findViewById(R.id.dialog_res_start_layout);
+        TextInputLayout endLayout = dialogView.findViewById(R.id.dialog_res_end_layout);
         View cancelBtn = dialogView.findViewById(R.id.dialog_res_cancel);
         View saveBtn = dialogView.findViewById(R.id.dialog_res_save);
 
@@ -155,22 +180,30 @@ public final class ReservationScheduleDialog {
         final long[] endMs = { 0 };
         SimpleDateFormat displayFmt = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
-        View.OnClickListener pickStart = v -> pickDateTime(ctx, startMs[0] > 0 ? startMs[0] : System.currentTimeMillis(),
-                (year, month, day, hour, minute) -> {
-                    Calendar c = Calendar.getInstance();
-                    c.set(year, month, day, hour, minute, 0);
-                    c.set(Calendar.MILLISECOND, 0);
-                    startMs[0] = c.getTimeInMillis();
-                    if (startEt != null) startEt.setText(displayFmt.format(c.getTime()));
-                });
-        View.OnClickListener pickEnd = v -> pickDateTime(ctx, endMs[0] > 0 ? endMs[0] : (startMs[0] > 0 ? startMs[0] + 3600000 : System.currentTimeMillis() + 3600000),
-                (year, month, day, hour, minute) -> {
-                    Calendar c = Calendar.getInstance();
-                    c.set(year, month, day, hour, minute, 0);
-                    c.set(Calendar.MILLISECOND, 0);
-                    endMs[0] = c.getTimeInMillis();
-                    if (endEt != null) endEt.setText(displayFmt.format(c.getTime()));
-                });
+        View.OnClickListener pickStart = v -> {
+            clearScheduleFieldErrors(startLayout, endLayout, errorTv);
+            pickDateTime(ctx, startMs[0] > 0 ? startMs[0] : System.currentTimeMillis(),
+                    (year, month, day, hour, minute) -> {
+                        Calendar c = Calendar.getInstance();
+                        c.set(year, month, day, hour, minute, 0);
+                        c.set(Calendar.MILLISECOND, 0);
+                        startMs[0] = c.getTimeInMillis();
+                        if (startEt != null) startEt.setText(displayFmt.format(c.getTime()));
+                        clearScheduleFieldErrors(startLayout, endLayout, errorTv);
+                    });
+        };
+        View.OnClickListener pickEnd = v -> {
+            clearScheduleFieldErrors(startLayout, endLayout, errorTv);
+            pickDateTime(ctx, endMs[0] > 0 ? endMs[0] : (startMs[0] > 0 ? startMs[0] + 3600000 : System.currentTimeMillis() + 3600000),
+                    (year, month, day, hour, minute) -> {
+                        Calendar c = Calendar.getInstance();
+                        c.set(year, month, day, hour, minute, 0);
+                        c.set(Calendar.MILLISECOND, 0);
+                        endMs[0] = c.getTimeInMillis();
+                        if (endEt != null) endEt.setText(displayFmt.format(c.getTime()));
+                        clearScheduleFieldErrors(startLayout, endLayout, errorTv);
+                    });
+        };
         if (startEt != null) startEt.setOnClickListener(pickStart);
         if (endEt != null) endEt.setOnClickListener(pickEnd);
 
@@ -187,8 +220,8 @@ public final class ReservationScheduleDialog {
             carDropdown.setAdapter(new ArrayAdapter<>(ctx, android.R.layout.simple_dropdown_item_1line,
                     Collections.singletonList(carLabel)));
             carDropdown.setText(carLabel, false);
-            openDialogWithCars(fragment, dialogView, Collections.singletonList(fixedCar), errorTv, cancelBtn, saveBtn,
-                    purposeEt, startMs, endMs, onSuccess);
+            openDialogWithCars(fragment, dialogView, Collections.singletonList(fixedCar), errorTv, startLayout, endLayout,
+                    cancelBtn, saveBtn, purposeEt, startMs, endMs, onSuccess);
             return;
         }
 
@@ -217,7 +250,8 @@ public final class ReservationScheduleDialog {
                         }
                         carDropdown.setAdapter(new ArrayAdapter<>(ctx, android.R.layout.simple_dropdown_item_1line, labels));
                         if (!labels.isEmpty()) carDropdown.setText(labels.get(0), false);
-                        openDialogWithCars(fragment, dialogView, cars, errorTv, cancelBtn, saveBtn, purposeEt, startMs, endMs, onSuccess);
+                        openDialogWithCars(fragment, dialogView, cars, errorTv, startLayout, endLayout, cancelBtn, saveBtn,
+                                purposeEt, startMs, endMs, onSuccess);
                     }
 
                     @Override
@@ -230,7 +264,8 @@ public final class ReservationScheduleDialog {
     }
 
     private static void openDialogWithCars(Fragment fragment, View dialogView, List<Car> cars,
-            TextView errorTv, View cancelBtn, View saveBtn,
+            TextView errorTv, TextInputLayout startLayout, TextInputLayout endLayout,
+            View cancelBtn, View saveBtn,
             com.google.android.material.textfield.TextInputEditText purposeEt,
             long[] startMs, long[] endMs, Runnable onSuccess) {
         android.content.Context ctx = fragment.requireContext();
@@ -238,7 +273,7 @@ public final class ReservationScheduleDialog {
         AlertDialog dialog = new AlertDialog.Builder(ctx).setView(dialogView).setCancelable(true).create();
         cancelBtn.setOnClickListener(v -> dialog.dismiss());
         saveBtn.setOnClickListener(v -> {
-            errorTv.setVisibility(View.GONE);
+            clearScheduleFieldErrors(startLayout, endLayout, errorTv);
             String selectedText = carDropdown2 != null && carDropdown2.getText() != null ? carDropdown2.getText().toString() : "";
             // resolve car by matching adapter text
             ArrayAdapter<String> ad = carDropdown2 != null ? (ArrayAdapter<String>) carDropdown2.getAdapter() : null;
@@ -250,8 +285,10 @@ public final class ReservationScheduleDialog {
             }
             if (pos < 0 && !cars.isEmpty()) pos = 0;
             if (pos < 0 || pos >= cars.size()) {
-                errorTv.setText(ctx.getString(R.string.select_a_car));
+                String msg = ctx.getString(R.string.select_a_car);
+                errorTv.setText(msg);
                 errorTv.setVisibility(View.VISIBLE);
+                Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show();
                 return;
             }
             Car selected = cars.get(pos);
@@ -262,14 +299,14 @@ public final class ReservationScheduleDialog {
             if (!purpose.isEmpty()) body.put("purpose", purpose);
             if (scheduled) {
                 if (endMs[0] <= startMs[0]) {
-                    errorTv.setText(ctx.getString(R.string.end_after_start));
-                    errorTv.setVisibility(View.VISIBLE);
+                    showScheduleValidationIssue(ctx, errorTv, startLayout, endLayout,
+                            ctx.getString(R.string.end_after_start), true, true);
                     return;
                 }
                 long nowMs = System.currentTimeMillis();
                 if (startMs[0] < nowMs) {
-                    errorTv.setText(ctx.getString(R.string.start_must_be_future));
-                    errorTv.setVisibility(View.VISIBLE);
+                    showScheduleValidationIssue(ctx, errorTv, startLayout, endLayout,
+                            ctx.getString(R.string.start_must_be_future), true, false);
                     return;
                 }
                 body.put("startDate", isoFormat().format(new java.util.Date(startMs[0])));
@@ -299,9 +336,7 @@ public final class ReservationScheduleDialog {
                                 if (rs == null || re == null) continue;
                                 if (intervalsOverlap(slotStart, slotEnd, rs, re)) {
                                     String msg = ctx.getString(R.string.reservation_user_time_overlap);
-                                    errorTv.setText(msg);
-                                    errorTv.setVisibility(View.VISIBLE);
-                                    Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show();
+                                    showScheduleValidationIssue(ctx, errorTv, startLayout, endLayout, msg, true, true);
                                     saveBtn.setEnabled(true);
                                     return;
                                 }
@@ -362,10 +397,12 @@ public final class ReservationScheduleDialog {
                     return;
                 }
                 String apiErr = parseApiErrorMessage(response);
-                errorTv.setText(apiErr != null ? apiErr
+                String errLine = apiErr != null ? apiErr
                         : (response.code() == 400 ? ctx.getString(R.string.reservation_invalid_request)
-                        : ctx.getString(R.string.failed_create_reservation)));
+                        : ctx.getString(R.string.failed_create_reservation));
+                errorTv.setText(errLine);
                 errorTv.setVisibility(View.VISIBLE);
+                Toast.makeText(ctx, errLine, Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -375,6 +412,7 @@ public final class ReservationScheduleDialog {
                 String msg = t.getMessage() != null ? t.getMessage() : ctx.getString(R.string.network_error);
                 errorTv.setText(msg);
                 errorTv.setVisibility(View.VISIBLE);
+                Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show();
             }
         });
     }

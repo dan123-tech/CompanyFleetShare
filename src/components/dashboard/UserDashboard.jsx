@@ -146,6 +146,9 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
   const [scheduleEnd, setScheduleEnd] = useState("");
   const [schedulePurpose, setSchedulePurpose] = useState("");
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+  /** Shown inside the schedule modal (global `error` sits behind the overlay). */
+  const [scheduleFormError, setScheduleFormError] = useState("");
+  const [scheduleHighlight, setScheduleHighlight] = useState(""); // "start" | "end" | "both" | ""
   const [icsDownloadingId, setIcsDownloadingId] = useState(null);
   const [mfaPassword, setMfaPassword] = useState("");
   const [mfaSaving, setMfaSaving] = useState(false);
@@ -268,31 +271,41 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
     setScheduleEnd(end.toISOString().slice(0, 16));
     setSchedulePurpose("");
     setScheduleSubmitting(false);
+    setScheduleFormError("");
+    setScheduleHighlight("");
   }
 
   async function submitSchedule(e) {
     e.preventDefault();
     if (!scheduleModal?.id) return;
     setScheduleSubmitting(true);
+    setScheduleFormError("");
+    setScheduleHighlight("");
     setError("");
     try {
       const start = new Date(scheduleStart).toISOString();
       const end = new Date(scheduleEnd).toISOString();
       if (new Date(scheduleEnd) <= new Date(scheduleStart)) {
-        setError("End must be after start");
+        setScheduleFormError("End date and time must be after the start. Adjust the fields below.");
+        setScheduleHighlight("both");
         setScheduleSubmitting(false);
         return;
       }
       if (new Date(scheduleStart).getTime() < Date.now()) {
-        setError("Start must be now or in the future");
+        setScheduleFormError("Start must be now or in the future.");
+        setScheduleHighlight("start");
         setScheduleSubmitting(false);
         return;
       }
       await apiCreateReservation(scheduleModal.id, schedulePurpose || null, start, end);
       setScheduleModal(null);
+      setScheduleFormError("");
+      setScheduleHighlight("");
       load();
     } catch (err) {
-      setError(err.message || "Failed to book");
+      const msg = err.message || "Failed to book";
+      setScheduleFormError(msg);
+      setScheduleHighlight("both");
     } finally {
       setScheduleSubmitting(false);
     }
@@ -1804,18 +1817,34 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
 
       {/* Schedule booking – start/end date-time */}
       {scheduleModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-100">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-100 relative z-[201]">
             <h3 className="text-lg font-semibold text-slate-800 mb-2">Book in advance</h3>
             <p className="text-sm text-slate-500 mb-4">{scheduleModal.brand} {scheduleModal.registrationNumber}</p>
             <form onSubmit={submitSchedule} className="space-y-4">
+              {scheduleFormError ? (
+                <div
+                  className="rounded-xl border-2 border-red-500 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900 shadow-sm"
+                  role="alert"
+                >
+                  {scheduleFormError}
+                </div>
+              ) : null}
               <div>
                 <label className="block text-sm font-semibold text-slate-600 mb-1">Start date & time</label>
                 <input
                   type="datetime-local"
                   value={scheduleStart}
-                  onChange={(e) => setScheduleStart(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-800 bg-white focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-ring)] outline-none"
+                  onChange={(e) => {
+                    setScheduleStart(e.target.value);
+                    setScheduleFormError("");
+                    setScheduleHighlight("");
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl text-slate-800 bg-white outline-none ring-2 focus:ring-[var(--primary-ring)] ${
+                    scheduleHighlight === "start" || scheduleHighlight === "both"
+                      ? "border-2 border-red-600 ring-red-200"
+                      : "border border-slate-200 focus:border-[var(--primary)]"
+                  }`}
                   required
                 />
               </div>
@@ -1824,8 +1853,16 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                 <input
                   type="datetime-local"
                   value={scheduleEnd}
-                  onChange={(e) => setScheduleEnd(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-800 bg-white focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-ring)] outline-none"
+                  onChange={(e) => {
+                    setScheduleEnd(e.target.value);
+                    setScheduleFormError("");
+                    setScheduleHighlight("");
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl text-slate-800 bg-white outline-none ring-2 focus:ring-[var(--primary-ring)] ${
+                    scheduleHighlight === "end" || scheduleHighlight === "both"
+                      ? "border-2 border-red-600 ring-red-200"
+                      : "border border-slate-200 focus:border-[var(--primary)]"
+                  }`}
                   required
                 />
               </div>
@@ -1840,7 +1877,17 @@ export default function UserDashboard({ user, company, onUserUpdated, viewAs, se
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setScheduleModal(null)} className="px-4 py-2 bg-slate-100 text-slate-800 font-semibold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScheduleModal(null);
+                    setScheduleFormError("");
+                    setScheduleHighlight("");
+                  }}
+                  className="px-4 py-2 bg-slate-100 text-slate-800 font-semibold rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button type="submit" disabled={scheduleSubmitting} className="px-4 py-2 bg-[#1E293B] text-white font-semibold rounded-xl hover:bg-[#334155] disabled:opacity-50 shadow-sm transition-colors">{scheduleSubmitting ? "Booking…" : "Book"}</button>
               </div>
             </form>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.CarSharing" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Shared palette/layout; {@link Theme.CarSharing} adds light/dark system bar icon contrast. -->
+    <style name="Base.Theme.CarSharing" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_variant</item>
         <item name="colorOnPrimary">@color/on_primary</item>
@@ -19,5 +20,11 @@
         <!-- Input field tint -->
         <item name="colorControlActivated">@color/primary</item>
         <item name="colorControlHighlight">@color/join_badge_bg</item>
+    </style>
+
+    <!-- Light UI: dark status/nav icons on white/light bars (phone light theme). -->
+    <style name="Theme.CarSharing" parent="Base.Theme.CarSharing">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>
