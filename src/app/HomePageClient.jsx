@@ -57,32 +57,13 @@ export default function HomePageClient() {
           backdropFilter: "blur(12px)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-3 sm:py-3.5 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-            <Link href="/#home" className="flex items-center min-w-0 shrink-0 hover:opacity-90 transition-opacity">
-              <FleetShareBrandBlock tone="dark" size="nav" priority className="max-w-[min(300px,82vw)]" />
-            </Link>
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 shrink-0">
-              <LanguageCurrencySwitcher variant="landing" showCurrency={false} />
-              <div className="hidden sm:block w-px h-9 shrink-0 bg-white/15" aria-hidden />
-              <Link
-                href="/login"
-                className="text-[13px] font-medium px-3 py-2 rounded-lg transition-colors hover:text-white/90 hover:bg-white/5"
-                style={navMuted}
-              >
-                {t("landing.signIn")}
-              </Link>
-              <Link
-                href="/register"
-                className="text-[13px] font-semibold px-3.5 py-2 rounded-lg text-white transition-colors shadow-sm bg-[#185fa5] hover:bg-[#1d4ed8] border border-white/10"
-              >
-                {t("landing.getStarted")}
-              </Link>
-            </div>
-          </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-3 sm:py-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Link href="/#home" className="flex items-center min-w-0 shrink-0 hover:opacity-90 transition-opacity">
+            <FleetShareBrandBlock tone="dark" size="nav" priority className="max-w-[min(260px,70vw)] sm:max-w-[min(300px,82vw)]" />
+          </Link>
 
           <nav
-            className="flex flex-wrap items-center gap-x-1 gap-y-1 sm:gap-x-2 border-t border-white/10 pt-3 sm:border-t-0 sm:pt-0"
+            className="flex flex-1 min-w-0 flex-wrap items-center gap-x-0.5 gap-y-1 sm:gap-x-1"
             aria-label="Primary"
           >
             <a href="#home" className={navLinkClass} style={navMuted}>
@@ -129,6 +110,24 @@ export default function HomePageClient() {
               {t("landing.nav.contact")}
             </a>
           </nav>
+
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 shrink-0 ml-auto">
+            <LanguageCurrencySwitcher variant="landing" showCurrency={false} />
+            <div className="hidden sm:block w-px h-9 shrink-0 bg-white/15" aria-hidden />
+            <Link
+              href="/login"
+              className="text-[13px] font-medium px-3 py-2 rounded-lg transition-colors hover:text-white/90 hover:bg-white/5"
+              style={navMuted}
+            >
+              {t("landing.signIn")}
+            </Link>
+            <Link
+              href="/register"
+              className="text-[13px] font-semibold px-3.5 py-2 rounded-lg text-white transition-colors shadow-sm bg-[#185fa5] hover:bg-[#1d4ed8] border border-white/10"
+            >
+              {t("landing.getStarted")}
+            </Link>
+          </div>
         </div>
       </header>
 
