@@ -1,11 +1,10 @@
-import DownloadPageClient from "./DownloadPageClient";
+import DownloadUnavailableClient from "./DownloadUnavailableClient";
 
 export const metadata = {
   title: "Download | FleetShare",
-  description:
-    "FleetShare: use the web app, download source to self-host for your company, or install the Android APK.",
+  description: "FleetShare downloads are temporarily unavailable — contact support or return to the home page.",
 };
 
 export default function DownloadPage() {
-  return <DownloadPageClient />;
+  return <DownloadUnavailableClient />;
 }

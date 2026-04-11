@@ -45,6 +45,55 @@
       "contactBody": "Questions, demos, or technical support — we are here to help.",
       "contactSupport": "Support centre"
     },
+    "homeExplore": {
+      "title": "Where to next?",
+      "subtitle": "Open the web app, read about the Android client, check pricing and hosting options, or send us a message.",
+      "go": "Continue",
+      "webHint": "Create your company account and use the dashboard in the browser.",
+      "mobileHint": "See what the Android app offers drivers and fleet admins.",
+      "pricesHint": "Interested in hosting FleetShare on your own company server?",
+      "contactHint": "Demos, quotes, or technical questions — we reply by email."
+    },
+    "contactForm": {
+      "pageTitle": "Contact",
+      "pageSubtitle": "Send us a request and we will get back to you by email.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email address",
+      "message": "How can we help you?",
+      "submit": "Send message",
+      "sending": "Sending…",
+      "success": "Thank you — your message was sent.",
+      "errorGeneric": "Something went wrong. Please try again later.",
+      "errorConfig": "The contact form is not configured on this server (email inbox).",
+      "errorCaptcha": "Please confirm you are not a robot.",
+      "captchaDisabled": "The contact form is not available until reCAPTCHA is configured (see site administrator).",
+      "recaptchaAria": "Anti-spam verification"
+    },
+    "mobileApp": {
+      "title": "FleetShare for Android",
+      "subtitle": "Native client for your company fleet",
+      "intro": "The app uses the same secure session and REST API as the web dashboard. Your IT team provides the server URL; features below match the current Android build.",
+      "bullet1": "Sign in with email and password; session cookies are stored securely on the device.",
+      "bullet2": "Dashboard with fleet overview: cars, active reservations, and team members.",
+      "bullet3": "Reserve vehicles with scheduling, pickup codes, and release codes when supported by your server.",
+      "bullet4": "Digital glovebox during an active reservation: ITP, RCA, and vignette documents on your phone.",
+      "bullet5": "Offline cache for reservations and cars so key data stays visible when the network drops.",
+      "bullet6": "Home screen widget for your next or current booking (where the launcher supports widgets).",
+      "bullet7": "Push notifications for reservation reminders when Firebase Cloud Messaging is configured.",
+      "bullet8": "Admin tools where your role allows: manage cars and users, invites, history, company settings, statistics, audit logs, maintenance, incidents, reports, and fleet calendar.",
+      "bullet9": "Driving licence upload and approval flow aligned with the web platform before booking.",
+      "ctaRegister": "Create a web account",
+      "ctaSupport": "Support centre"
+    },
+    "pricesPage": {
+      "title": "Prices & company server",
+      "subtitle": "Hosting and quotes",
+      "body": "Public pricing tables are not published here. If you are interested in running FleetShare on a self-hosted company server — your infrastructure, your data — please contact support for sizing, deployment options, and a tailored quote.",
+      "supportLead": "Our team can walk you through Docker-based deployment, security, and ongoing maintenance.",
+      "supportCta": "Open support centre",
+      "contactCta": "Contact us"
+    },
     "signIn": "Sign in",
     "getStarted": "Get started",
     "eyebrow": "Company Car Sharing Platform",
@@ -86,6 +135,9 @@
       "bullet3": "Reservation history & analytics"
     },
     "download": {
+      "unavailableTitle": "Downloads temporarily unavailable",
+      "unavailableBody": "Installers and public app packages are paused on this site for now. Please check back later or use the contact form if you need access for your organisation.",
+      "unavailableSupport": "Contact support",
       "pageTitle": "Download",
       "pageSubtitle": "Use online, deploy on your company’s server, or install the Android app",
       "intro": "Use the web app in your browser, run the full stack on your own machine with the installer below, or install the Android app on company devices.",

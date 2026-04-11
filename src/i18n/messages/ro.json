@@ -45,6 +45,55 @@
       "contactBody": "Întrebări, demo sau suport tehnic — suntem aici să ajutăm.",
       "contactSupport": "Centru suport"
     },
+    "homeExplore": {
+      "title": "Unde mergi mai departe?",
+      "subtitle": "Platformă web, detalii despre aplicația Android, prețuri și server propriu, sau trimite-ne un mesaj.",
+      "go": "Continuă",
+      "webHint": "Creează contul companiei și folosește panoul în browser.",
+      "mobileHint": "Descoperă ce oferă aplicația Android pentru șoferi și administratori.",
+      "pricesHint": "Te interesează FleetShare pe serverul propriu al companiei?",
+      "contactHint": "Demo, oferte sau întrebări tehnice — răspundem pe email."
+    },
+    "contactForm": {
+      "pageTitle": "Contact",
+      "pageSubtitle": "Trimite-ne o solicitare și îți răspundem pe email.",
+      "firstName": "Prenume",
+      "lastName": "Nume",
+      "email": "Adresă de email",
+      "message": "Cum vă putem ajuta?",
+      "submit": "Trimite mesaj",
+      "sending": "Se trimite…",
+      "success": "Mulțumim — mesajul a fost trimis.",
+      "errorGeneric": "A apărut o problemă. Încearcă din nou mai târziu.",
+      "errorConfig": "Formularul de contact nu este configurat pe acest server (inbox email).",
+      "errorCaptcha": "Te rugăm să confirmi că nu ești robot.",
+      "captchaDisabled": "Formularul nu este disponibil până la configurarea reCAPTCHA (administrator site).",
+      "recaptchaAria": "Verificare anti-spam"
+    },
+    "mobileApp": {
+      "title": "FleetShare pentru Android",
+      "subtitle": "Client nativ pentru flota companiei",
+      "intro": "Aplicația folosește aceeași sesiune securizată și API REST ca panoul web. Echipa IT furnizează URL-ul serverului; funcțiile de mai jos reflectă build-ul Android actual.",
+      "bullet1": "Autentificare cu email și parolă; cookie-urile de sesiune sunt stocate securizat pe dispozitiv.",
+      "bullet2": "Panou de bord cu privire de ansamblu: autovehicule, rezervări active și membri echipă.",
+      "bullet3": "Rezervare vehicule cu programare, coduri de preluare și predare când serverul le suportă.",
+      "bullet4": "Torpedou digital în timpul unei rezervări active: ITP, RCA și vignetă pe telefon.",
+      "bullet5": "Cache offline pentru rezervări și mașini, astfel încât datele esențiale rămân vizibile fără rețea.",
+      "bullet6": "Widget pe ecranul principal pentru următoarea sau rezervarea curentă (unde launcher-ul suportă widget-uri).",
+      "bullet7": "Notificări push pentru mementouri rezervări când Firebase Cloud Messaging este configurat.",
+      "bullet8": "Instrumente admin unde rolul permite: mașini, utilizatori, invitații, istoric, setări companie, statistici, jurnale audit, mentenanță, incidente, rapoarte și calendar flotă.",
+      "bullet9": "Încărcare și aprobare permis de conducere, aliniată platformei web, înainte de rezervare.",
+      "ctaRegister": "Creează cont web",
+      "ctaSupport": "Centru suport"
+    },
+    "pricesPage": {
+      "title": "Prețuri & server companie",
+      "subtitle": "Găzduire și oferte",
+      "body": "Nu publicăm aici liste de prețuri fixe. Dacă ești interesat de FleetShare pe un server propriu al companiei — infrastructura ta, datele tale — contactează suportul pentru dimensionare, opțiuni de instalare și o ofertă personalizată.",
+      "supportLead": "Echipa poate explica instalarea pe bază de Docker, securitatea și mentenanța continuă.",
+      "supportCta": "Deschide centrul de suport",
+      "contactCta": "Contactează-ne"
+    },
     "signIn": "Autentificare",
     "getStarted": "Începe acum",
     "eyebrow": "Platformă de car sharing",
@@ -86,6 +135,9 @@
       "bullet3": "Istoric rezervări și analize"
     },
     "download": {
+      "unavailableTitle": "Descărcările nu sunt disponibile momentan",
+      "unavailableBody": "Instalatoarele și pachetele publice sunt întrerupte pe acest site. Revino mai târziu sau folosește formularul de contact dacă ai nevoie de acces pentru organizație.",
+      "unavailableSupport": "Contactează suportul",
       "pageTitle": "Descărcare",
       "pageSubtitle": "Online, server în compania dvs. sau aplicație Android",
       "intro": "Folosiți aplicația web în browser, rulați stiva completă pe propriul server cu instalatorul de mai jos, sau instalați aplicația Android pe dispozitivele companiei.",
