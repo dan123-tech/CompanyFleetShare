@@ -41,6 +41,11 @@ Local URLs:
 - App: `http://localhost:3100`
 - API docs: `http://localhost:3100/api-docs`
 
+## Documentation
+
+- **Web security hardening** (inactivity sign-out, login lockout, API rate limits, HTTP headers): [docs/WEB-SECURITY-UPDATE.md](./docs/WEB-SECURITY-UPDATE.md)
+- **Security overview** (secrets, CSRF, auth rate limits): [docs/SECURITY.md](./docs/SECURITY.md)
+
 ## Required Environment Variables
 
 Core:

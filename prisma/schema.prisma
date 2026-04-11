@@ -129,6 +129,10 @@ model User {
   emailBookingNotifications Boolean         @default(true)
   /** Secret token for GET /api/calendar/feed.ics?token=… (subscribe in Outlook/Google). */
   calendarFeedToken    String?              @unique
+  /** After too many failed password attempts; login rejected until this time. */
+  loginLockedUntil     DateTime?
+  /** Consecutive failed password checks (reset on success or after lock expires). */
+  loginFailedAttempts  Int                  @default(0)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 

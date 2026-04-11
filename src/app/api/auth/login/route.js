@@ -16,6 +16,13 @@ import {
   normalizeEmailForRateLimit,
   recordLoginAuthFailure,
 } from "@/lib/security/rate-limit-auth";
+import {
+  isUserLoginLocked,
+  loginLockRetryAfterSec,
+  logLoginFailure,
+  recordPasswordLoginFailure,
+  clearPasswordLoginFailures,
+} from "@/lib/security/login-lockout";
 import { prisma } from "@/lib/db";
 import { buildLoginSuccessResponse } from "@/lib/auth/issue-login-session";
 import {
@@ -136,14 +143,37 @@ export async function POST(request) {
     const user = await findUserByEmail(email);
     if (!user) {
       await recordLoginAuthFailure(ip, emailNorm);
+      logLoginFailure({
+        reason: "invalid_credentials_unknown_user",
+        emailNorm,
+        userId: null,
+        ip,
+      });
       return errorResponse("Invalid credentials", 401);
+    }
+
+    if (isUserLoginLocked(user)) {
+      logLoginFailure({
+        reason: "login_blocked_account_locked",
+        emailNorm,
+        userId: user.id,
+        ip,
+        extra: { retryAfterSec: loginLockRetryAfterSec(user) },
+      });
+      return rateLimitResponse(
+        "Account temporarily locked after too many failed sign-in attempts. Try again later.",
+        loginLockRetryAfterSec(user),
+      );
     }
 
     const ok = await verifyPassword(password, user.password);
     if (!ok) {
       await recordLoginAuthFailure(ip, emailNorm);
+      await recordPasswordLoginFailure(user.id, emailNorm, ip);
       return errorResponse("Invalid credentials", 401);
     }
+
+    await clearPasswordLoginFailures(user.id);
 
     const client = normalizeClientType(clientType);
 

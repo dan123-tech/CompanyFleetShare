@@ -5,10 +5,14 @@ import {
   applyCorsHeaders,
   applyCorsPreflightHeaders,
 } from "@/lib/security/cors";
+import { clientIpFromRequest } from "@/lib/security/client-ip";
+import { checkApiIpRateLimit } from "@/lib/security/middleware-ip-rate-limit";
 
 /**
  * CORS for /api/* when CORS_ALLOWED_ORIGINS or NEXT_PUBLIC_APP_URL lists allowed browser origins.
- * Security headers in production (HTTPS-oriented). HSTS can be disabled via DISABLE_HSTS=1.
+ * API rate limit per IP (in-memory; see middleware-ip-rate-limit.js).
+ * Security headers: CSP, X-Frame-Options, HSTS (HTTPS only), X-Content-Type-Options, etc.
+ * HSTS can be disabled via DISABLE_HSTS=1.
  */
 export function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -29,12 +33,23 @@ export function middleware(request) {
     return res;
   }
 
+  if (isApi && request.method !== "OPTIONS") {
+    const ip = clientIpFromRequest(request);
+    const rl = checkApiIpRateLimit(ip);
+    if (!rl.ok) {
+      const res = NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+      res.headers.set("Retry-After", String(rl.retryAfterSec));
+      if (corsOrigin) {
+        applyCorsHeaders(res, corsOrigin);
+      }
+      return res;
+    }
+  }
+
   const res = NextResponse.next();
   if (corsOrigin) {
     applyCorsHeaders(res, corsOrigin);
   }
-  // Never allow platform/proxy to accidentally expose wildcard CORS on HTML/pages.
-  // CORS is only intended for /api/* with an explicit allow-list.
   if (!isApi) {
     res.headers.delete("Access-Control-Allow-Origin");
     res.headers.delete("Access-Control-Allow-Credentials");
@@ -43,8 +58,6 @@ export function middleware(request) {
     res.headers.delete("Access-Control-Max-Age");
     res.headers.delete("Vary");
   }
-
-  if (process.env.NODE_ENV !== "production") return res;
 
   /** Same-origin iframe (e.g. /glovebox/rca) must be allowed to embed this PDF/image stream. */
   const isGloveboxDocumentRoute =
@@ -62,7 +75,6 @@ export function middleware(request) {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "style-src 'self' 'unsafe-inline' https:",
-    // Next.js still often needs 'unsafe-inline' for scripts; tighten later with nonces/hashes where feasible.
     "script-src 'self' 'unsafe-inline' https:",
     "connect-src 'self' https: wss:",
     "upgrade-insecure-requests",
@@ -79,7 +91,6 @@ export function middleware(request) {
   res.headers.set("Cross-Origin-Resource-Policy", "same-origin");
   res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
-  // HSTS only over HTTPS — never send on http:// (e.g. LAN IP) or browsers may behave oddly.
   if (process.env.DISABLE_HSTS !== "1" && request.nextUrl.protocol === "https:") {
     res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
@@ -93,7 +104,6 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    // Skip static assets including .apk so installs are not affected by nosniff / extra headers.
     "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|apk)$).*)",
   ],
 };

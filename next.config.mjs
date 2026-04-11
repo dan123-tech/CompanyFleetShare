@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const isProduction = process.env.NODE_ENV === "production";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -37,12 +36,7 @@ const nextConfig = {
         value: "same-origin",
       },
     ];
-    if (isProduction) {
-      securityHeaders.push({
-        key: "Strict-Transport-Security",
-        value: "max-age=15552000",
-      });
-    }
+    // HSTS is set in src/middleware.js for HTTPS requests (avoids duplicate header with middleware).
 
     return [
       {

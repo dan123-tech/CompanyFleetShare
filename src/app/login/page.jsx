@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { apiLogin, apiVerifyMfaLogin } from "@/lib/api";
@@ -28,6 +28,14 @@ export default function LoginPage() {
   const [mfaCode, setMfaCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [idleSignedOut, setIdleSignedOut] = useState(false);
+
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("reason") === "idle") setIdleSignedOut(true);
+    } catch (_) {}
+  }, []);
 
   async function handlePasswordSubmit(e) {
     e.preventDefault();
@@ -145,6 +153,15 @@ export default function LoginPage() {
               ? t("login.mfaSubtitle", { email: maskEmail(pendingEmail) })
               : t("login.subtitle")}
           </p>
+
+          {idleSignedOut && (
+            <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="text-sm">
+                You were signed out after a period of inactivity. Sign in again to continue.
+              </span>
+            </div>
+          )}
 
           {error && (
             <div className="mb-5 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-100 text-red-700">
