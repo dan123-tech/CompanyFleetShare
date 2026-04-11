@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { apiLogout } from "@/lib/api";
@@ -38,13 +39,22 @@ export function Sidebar({ user, children, mobileOpen, onClose, viewAs, setViewAs
     router.refresh();
   }
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       {mobileOpen && (
         <button
           type="button"
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-[135] md:hidden backdrop-blur-sm touch-manipulation"
           aria-label={t("sidebar.closeMenu")}
         />
       )}
@@ -52,9 +62,10 @@ export function Sidebar({ user, children, mobileOpen, onClose, viewAs, setViewAs
       <aside
         className={`
           fleet-sidebar
-          w-[240px] min-w-[240px] h-screen flex flex-col pb-3 text-white shrink-0 overflow-x-hidden
-          fixed md:relative left-0 top-0 z-50 md:z-auto
-          transform transition-transform duration-200 ease-out
+          w-[min(280px,85vw)] min-w-0 max-w-[85vw] md:w-[240px] md:min-w-[240px] md:max-w-none
+          h-[100dvh] md:h-screen flex flex-col pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:pb-3 text-white shrink-0 overflow-x-hidden
+          fixed md:relative left-0 top-0 z-[140] md:z-auto
+          transform transition-transform duration-200 ease-out touch-pan-y
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
         style={{
@@ -113,7 +124,10 @@ export function Sidebar({ user, children, mobileOpen, onClose, viewAs, setViewAs
                     type="button"
                     role="tab"
                     aria-selected={viewAs === v}
-                    onClick={() => setViewAs(v)}
+                    onClick={() => {
+                      setViewAs(v);
+                      onClose?.();
+                    }}
                     className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
                       viewAs === v
                         ? v === "admin"
